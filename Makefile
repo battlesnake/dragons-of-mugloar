@@ -1,29 +1,27 @@
-# Binary to make
-# Name is tribute to Rogue'O'Matic
-bin := mugomatic
+# Binaries to make
+# Name "mugomatic" is tribute to Rogueomatic
+bin := mugcli mugomatic
 
 # Objects to make
-obj := Api.oxx Game.oxx parse_number.oxx $(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
+obj := Api.oxx Game.oxx Menu.oxx b64dec.oxx $(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
 
 # Add libcpr sources to search path for sources
 vpath %.cpp lib/cpr/cpr/
 
-# Use clang if available
-ifneq ($(shell which clang++ 2>/dev/null),)
-CXX := clang++
-endif
-
 # Optimisation level (usage e.g. make O=2)
-O ?= 0
+O ?= 2
 
 # Compiler flags
 CXXFLAGS := \
 	-std=c++17 \
 	-Ilib/cpr/include \
 	-Ilib/rapidjson/include \
+	-Ilib/base-n/include \
 	-MMD \
 	-g -O$(O) \
 	-Wall -Wextra -Wno-unused-command-line-argument -Werror \
+	-fsanitize=address \
+	-fsanitize=undefined \
 	-ffunction-sections -fdata-sections -Wl,--gc-sections \
 	-pipe
 
@@ -34,10 +32,16 @@ all: $(bin)
 clean:
 	rm -f -- $(bin) $(obj) $(obj:%.oxx=%.d)
 
-$(bin): $(obj)
-	$(CXX) $(CXXFLAGS) -o $@ $^ -lpthread -lm
+.PHONY: cli
+cli: mugcli
+	./mugcli
 
-$(obj): %.oxx: %.cpp
+$(bin): $(obj)
+	$(CXX) $(CXXFLAGS) -o $@ $^ -lcurl -lpthread -lm -lasan -lubsan
+
+$(bin): %: %.oxx
+
+%.oxx: %.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 -include $(wildcard *.d)

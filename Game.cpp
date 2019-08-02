@@ -1,4 +1,4 @@
-#include "parse_number.hpp"
+#include "b64dec.hpp"
 #include "Game.hpp"
 
 namespace mugloar {
@@ -12,6 +12,9 @@ Game::Game(const Api& api) :
 
 void Game::turn_started()
 {
+	if (dead()) {
+		return;
+	}
 	update_reputation();
 	update_messages();
 	update_items();
@@ -25,12 +28,19 @@ void Game::update_reputation()
 void Game::update_messages()
 {
 	_messages.clear();
-	api.get_messages(_id, [this] (AdId ad_id, String message, Number reward, Number expires_in) {
+	api.get_messages(_id, [this] (AdId ad_id, String message, Number reward, Number expires_in, String probability, bool base64) {
+		if (base64) {
+			ad_id = b64dec(ad_id);
+			message = b64dec(message);
+			probability = b64dec(probability);
+		}
 		_messages.push_back({
 			std::move(ad_id),
 			std::move(message),
 			reward,
-			expires_in
+			expires_in,
+			probability,
+			base64
 			});
 	});
 }
@@ -52,6 +62,7 @@ std::pair<bool, String> Game::solve_message(const Message& message)
 	bool success;
 	String explanation;
 	api.solve_message(_id, message.id, success, _lives, _gold, _score, _high_score, _turn, explanation);
+	turn_started();
 	return std::make_pair(success, std::move(explanation));
 }
 
@@ -62,6 +73,7 @@ bool Game::purchase_item(const Item& item)
 	if (success) {
 		_own_items.emplace_back(item);
 	}
+	turn_started();
 	return success;
 }
 

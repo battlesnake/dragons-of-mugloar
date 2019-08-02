@@ -4,3 +4,6 @@
 [submodule "lib/cpr"]
 	path = lib/cpr
 	url = https://github.com/whoshuu/cpr
+[submodule "lib/base-n"]
+	path = lib/base-n
+	url = https://github.com/azawadzki/base-n

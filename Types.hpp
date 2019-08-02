@@ -11,11 +11,9 @@ using String = std::string;
 
 /*
  * Range / precision not specified in the docs.
- * Will assume <int> for now.
- *
- * Ensure there's extra validation in input-parsing, in case we're wrong.
+ * Will assume <double> for now.
  */
-using Number = int;
+using Number = double;
 
 /* Surrogate ID data types */
 using GameId = String;

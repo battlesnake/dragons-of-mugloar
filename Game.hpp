@@ -19,16 +19,16 @@ class Game
 	const Api& api;
 
 	GameId _id;
-	Number _lives;
-	Number _gold;
-	Number _level;
-	Number _score;
-	Number _high_score;
-	Number _turn;
+	Number _lives = 0;
+	Number _gold = 0;
+	Number _level = 0;
+	Number _score = 0;
+	Number _high_score = 0;
+	Number _turn = 0;
 
-	Number _people_rep;
-	Number _state_rep;
-	Number _underworld_rep;
+	Number _people_rep = 0;
+	Number _state_rep = 0;
+	Number _underworld_rep = 0;
 
 	std::vector<Message> _messages;
 
@@ -92,13 +92,15 @@ struct Message
 
 	/*
 	 * Undocumented:
-	 * encrypted (unknown, nullable)
+	 * probability (String, possibly enum-string)
 	 */
+	String probability;
 
 	/*
 	 * Undocumented:
-	 * probability (String, possibly enum-string)
+	 * encrypted (number, nullable)
 	 */
+	bool encoded;
 };
 
 /* Item in shop or in our rucksack */

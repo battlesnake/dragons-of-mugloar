@@ -8,7 +8,6 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
 
-#include "parse_number.hpp"
 #include "Api.hpp"
 
 namespace mugloar {
@@ -49,33 +48,43 @@ void Api::game_start(GameId& game_id, Number& lives, Number& gold, Number& level
 	rapidjson::Document response;
 	execute_request(POST, base, "/game/start", response);
 	game_id = response["gameId"].GetString();
-	lives = parse_number(response["lives"].GetString());
-	gold = parse_number(response["gold"].GetString());
-	level = parse_number(response["level"].GetString());
-	score = parse_number(response["score"].GetString());
-	high_score = parse_number(response["highScore"].GetString());
-	turn = parse_number(response["turn"].GetString());
+	lives = response["lives"].GetInt64();
+	gold = response["gold"].GetInt64();
+	level = response["level"].GetInt64();
+	score = response["score"].GetInt64();
+	high_score = response["highScore"].GetInt64();
+	turn = response["turn"].GetInt64();
 }
 
 void Api::investigate_reputation(const GameId& game_id, Number& people, Number& state, Number& underworld) const
 {
 	rapidjson::Document response;
 	execute_request(POST, base, "/" + game_id + "/investigate/reputation", response);
-	people = parse_number(response["people"].GetString());
-	state = parse_number(response["state"].GetString());
-	underworld = parse_number(response["underworld"].GetString());
+	people = response["people"].GetDouble();
+	state = response["state"].GetDouble();
+	underworld = response["underworld"].GetDouble();
 }
 
-void Api::get_messages(const GameId& game_id, std::function<void(AdId, String, Number, Number)> consume_message) const
+void Api::get_messages(const GameId& game_id, std::function<void(AdId, String, Number, Number, String, bool)> consume_message) const
 {
 	rapidjson::Document response;
 	execute_request(GET, base, "/" + game_id + "/messages", response);
-	for (const auto& msg : response["messages"].GetArray()) {
+	/* BUG: API defines root as object with "messages" array-member but example has the array as root */
+	for (const auto& msg : response.GetArray()) {
+		/*
+		 * "Encrypted" field is null/1.
+		 * Non-null indicates that the text fields are base64 encoded.
+		 *
+		 * This includes the also-undocumented "probability" fields.
+		 */
 		consume_message(
 			msg["adId"].GetString(),
 			msg["message"].GetString(),
-			parse_number(msg["reward"].GetString()),
-			parse_number(msg["expiresIn"].GetString())
+			/* BUG: API defines this as string, but example is number */
+			msg["reward"].GetInt64(),
+			msg["expiresIn"].GetInt64(),
+			msg["probability"].GetString(),
+			msg.HasMember("encrypted") && !msg["encrypted"].IsNull()
 			);
 	}
 }
@@ -85,11 +94,11 @@ void Api::solve_message(const GameId& game_id, const AdId& ad_id, bool& success,
 	rapidjson::Document response;
 	execute_request(POST, base, "/" + game_id + "/solve/" + ad_id, response);
 	success = response["success"].GetBool();
-	lives = parse_number(response["lives"].GetString());
-	gold = parse_number(response["gold"].GetString());
-	score = parse_number(response["score"].GetString());
-	high_score = parse_number(response["highScore"].GetString());
-	turn = parse_number(response["turn"].GetString());
+	lives = response["lives"].GetInt64();
+	gold = response["gold"].GetInt64();
+	score = response["score"].GetInt64();
+	high_score = response["highScore"].GetInt64();
+	turn = response["turn"].GetInt64();
 	message = response["message"].GetString();
 }
 
@@ -97,11 +106,12 @@ void Api::shop_list_items(const GameId& game_id, std::function<void(ItemId, Stri
 {
 	rapidjson::Document response;
 	execute_request(GET, base, "/" + game_id + "/shop", response);
-	for (const auto& item : response["items"].GetArray()) {
+	/* BUG: API defines root as object with "items" array-member but example has the array as root */
+	for (const auto& item : response.GetArray()) {
 		consume_item(
 			item["id"].GetString(),
 			item["name"].GetString(),
-			parse_number(item["cost"].GetString())
+			item["cost"].GetInt64()
 			);
 	}
 }
@@ -112,10 +122,10 @@ void Api::shop_buy_item(const GameId& game_id, const ItemId& item_id, bool& succ
 	execute_request(POST, base, "/" + game_id + "/shop/buy/" + item_id, response);
 	/* BUG: API defines this as a string, but example is boolean */
 	success = response["shoppingSuccess"].GetBool();
-	gold = parse_number(response["gold"].GetString());
-	lives = parse_number(response["lives"].GetString());
-	level = parse_number(response["level"].GetString());
-	turn = parse_number(response["turn"].GetString());
+	gold = response["gold"].GetInt64();
+	lives = response["lives"].GetInt64();
+	level = response["level"].GetInt64();
+	turn = response["turn"].GetInt64();
 }
 
 }
