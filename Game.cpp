@@ -18,16 +18,10 @@ void Game::turn_started()
 	if (dead()) {
 		return;
 	}
-	/* Reputation update advances a turn, do it before updating others */
+	/* Reputation update advances a turn (or otherwise has some other annoying side-effect), do it before updating others */
 	update_reputation();
-	/* Run updates in parallel */
-	std::vector<std::thread> tasks;
-	tasks.reserve(2);
-	tasks.emplace_back([this] () { update_messages(); });
-	tasks.emplace_back([this] () { update_items(); });
-	for (auto& task : tasks) {
-		task.join();
-	}
+	update_messages();
+	update_items();
 }
 
 void Game::update_reputation()
