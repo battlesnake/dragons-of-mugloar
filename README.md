@@ -19,7 +19,9 @@ Requires for running:
 
  * libcurl
 
- * ANSI/VT100-comptaible terminal for `mugcli` (i.e. not CMD.EXE or minicom)
+ * ANSI/VT100-comptaible terminal for `mugcli` (i.e. not CMD.EXE or Minicom)
+
+ * POSIX environment (Linux ideally, may also work on OSX)
 
 
 To build:
@@ -32,12 +34,22 @@ To run the command-line interactive interface:
 	./mugcli
 
 
+To collect training data for the AI player:
+
+	./mugcollect training.csv
+
+
+To train the artificial intelligence using the previously-collected data:
+
+	./TODO_NOT_IMPLEMENTED_YET training.csv
+
+
 To run the fully-automated luxury cromulent dragon trainer:
 
-	./mugomatic
+	./mugomatic neuralnet.csv
 
 
-To clean all the generated stuff out:
+To delete the compiled binaries and intermediate files out:
 
     make clean
 

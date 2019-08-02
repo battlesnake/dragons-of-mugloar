@@ -1,4 +1,8 @@
 *.d
 *.oxx
+
 /mugcli
+/mugcollect
 /mugomatic
+
+/training.csv
