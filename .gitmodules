@@ -1,0 +1,6 @@
+[submodule "lib/rapidjson"]
+	path = lib/rapidjson
+	url = https://github.com/Tencent/rapidjson/
+[submodule "lib/cpr"]
+	path = lib/cpr
+	url = https://github.com/whoshuu/cpr
