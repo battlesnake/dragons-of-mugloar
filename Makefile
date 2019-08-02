@@ -1,9 +1,11 @@
 # Binaries to make
 # Name "mugomatic" is tribute to Rogueomatic
-bin := mugcli mugomatic
+bin := mugcli mugomatic mugcollect
 
 # Objects to make
-obj := Api.oxx Game.oxx Menu.oxx b64dec.oxx $(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
+obj := Api.oxx Game.oxx Menu.oxx LearnState.oxx LearnActionFeatures.oxx b64dec.oxx $(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
+
+libs := -lcurl -licuuc -lpthread -lm
 
 # Add libcpr sources to search path for sources
 vpath %.cpp lib/cpr/cpr/
@@ -19,25 +21,34 @@ CXXFLAGS := \
 	-Ilib/base-n/include \
 	-MMD \
 	-g -O$(O) \
-	-Wall -Wextra -Wno-unused-command-line-argument -Werror \
-	-fsanitize=address \
-	-fsanitize=undefined \
 	-ffunction-sections -fdata-sections -Wl,--gc-sections \
 	-pipe
+
+ifeq ($(O),0)
+libs += -lasan -lubsan
+CXXFLAGS += -fsanitize=address -fsanitize=undefined
+endif
+
+ifneq ($(shell which clang++ 2>/dev/null),)
+CXX := clang++
+CXXFLAGS += -Wall -Wextra -Wno-unused-command-line-argument -Werror
+else
+CXXFLAGS += -Wall -Wextra -Werror
+endif
 
 .PHONY: all
 all: $(bin)
 
 .PHONY: clean
 clean:
-	rm -f -- $(bin) $(obj) $(obj:%.oxx=%.d)
+	rm -f -- $(bin) $(obj) $(bin:%=%.oxx) $(obj:%.oxx=%.d)
 
 .PHONY: cli
 cli: mugcli
 	./mugcli
 
 $(bin): $(obj)
-	$(CXX) $(CXXFLAGS) -o $@ $^ -lcurl -lpthread -lm -lasan -lubsan
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(libs)
 
 $(bin): %: %.oxx
 
