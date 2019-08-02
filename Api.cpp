@@ -34,7 +34,13 @@ static void execute_request(Method method, const std::string& base, const std::s
 		std::cerr << "Status: " << r.status_code << std::endl;
 	}
 
-	if (r.status_code != 200) {
+	if (r.status_code == 400) {
+		rapidjson::Document err;
+		err.Parse(r.text.c_str());
+		throw std::runtime_error("HTTP code " + std::to_string(r.status_code) + ": " + err["error"].GetString());
+	} else if (r.status_code == 410) {
+		throw std::runtime_error("u ded");
+	} else if (r.status_code != 200) {
 		throw std::runtime_error("HTTP code " + std::to_string(r.status_code));
 	}
 
