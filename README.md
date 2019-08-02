@@ -44,9 +44,9 @@ To run the command-line interactive interface:
 	./mugcli
 
 
-To collect training data for the AI player, using 20 workers:
+To collect training data for the AI player, using 200 workers:
 
-	./mugcollect -o training.csv -p 20
+	./mugcollect -o training.csv -p 200
 
 
 To train the artificial intelligence using the previously-collected data:
