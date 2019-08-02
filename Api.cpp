@@ -1,6 +1,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
+#include <stdlib.h>
 
 #include <cpr/cpr.h>
 
@@ -12,6 +13,8 @@
 
 namespace mugloar {
 
+static bool debug_api = getenv("DEBUG_API") != nullptr;
+
 enum Method {
 	GET,
 	POST
@@ -19,23 +22,31 @@ enum Method {
 
 static void execute_request(Method method, const std::string& base, const std::string& path, rapidjson::Document& response)
 {
-	std::cerr << (method == GET ? "GET" : "POST") << " \t" << "... " << path << std::endl;
+	if (debug_api) {
+		std::cerr << (method == GET ? "GET" : "POST") << " \t" << "... " << path << std::endl;
+	}
 
 	cpr::Url url = base + path;
 
 	auto r = method == GET ? cpr::Get(url) : cpr::Post(url);
 
-	std::cerr << "Status: " << r.status_code << std::endl;
+	if (debug_api) {
+		std::cerr << "Status: " << r.status_code << std::endl;
+	}
 
 	if (r.status_code != 200) {
 		throw std::runtime_error("HTTP code " + std::to_string(r.status_code));
 	}
 
-	std::cerr << "Body: " << std::endl << r.text << std::endl;
+	if (debug_api) {
+		std::cerr << "Body: " << std::endl << r.text << std::endl;
+	}
 
 	response.Parse(r.text.c_str());
 
-	std::cerr << std::endl;
+	if (debug_api) {
+		std::cerr << std::endl;
+	}
 }
 
 Api::Api(std::string base) :

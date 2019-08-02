@@ -1,3 +1,6 @@
+#include <vector>
+#include <thread>
+
 #include "b64dec.hpp"
 #include "Game.hpp"
 
@@ -15,9 +18,15 @@ void Game::turn_started()
 	if (dead()) {
 		return;
 	}
-	update_reputation();
-	update_messages();
-	update_items();
+	/* Run updates in parallel */
+	std::vector<std::thread> tasks;
+	tasks.reserve(3);
+	tasks.emplace_back([this] () { update_reputation(); });
+	tasks.emplace_back([this] () { update_messages(); });
+	tasks.emplace_back([this] () { update_items(); });
+	for (auto& task : tasks) {
+		task.join();
+	}
 }
 
 void Game::update_reputation()
