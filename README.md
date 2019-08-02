@@ -12,6 +12,14 @@ Requires for building:
 
  * libcurl
 
+ * libicu
+
+ * basen (already included in lib/ dir)
+
+ * cpr (already included in lib/ dir)
+
+ * rapidjson (already included in lib/ dir)
+
 
 Requires for running:
 
@@ -19,9 +27,11 @@ Requires for running:
 
  * libcurl
 
+ * libicu
+
  * ANSI/VT100-comptaible terminal for `mugcli` (i.e. not CMD.EXE or Minicom)
 
- * POSIX environment (Linux ideally, may also work on OSX)
+ * Linux environment (might also work on OSX)
 
 
 To build:
