@@ -33,9 +33,9 @@ static float costfunction(const vector<float>::const_iterator& v)
 {
 	float cost = 0;
 	/* Death = huge loss */
-	cost += v[0] * -1000;
+	cost += v[0] * -3000;
 	/* Each life = moderate value */
-	cost += v[1] * 300;
+	cost += v[1] > 0 ? v[1] * 100 : v[1] * 1000;
 	/* Score = 1 per point */
 	cost += v[2];
 	/* Reputation = 100 per point */

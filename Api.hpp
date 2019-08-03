@@ -5,6 +5,12 @@
 
 namespace mugloar {
 
+enum Format
+{
+	PLAIN,
+	BASE64
+};
+
 /* Makes calls to API endpoints and returns parsed response fields */
 class Api
 {
@@ -18,7 +24,7 @@ public:
 
 	void investigate_reputation(const GameId& game_id, Number& people, Number& state, Number& underworld) const;
 
-	void get_messages(const GameId& game_id, std::function<void(AdId, String, Number, Number, String, bool)> consume_message) const;
+	void get_messages(const GameId& game_id, std::function<void(AdId, String, Number, Number, String, Format)> consume_message) const;
 
 	void solve_message(const GameId& game_id, const AdId& ad_id, bool& success, Number& lives, Number& gold, Number& score, Number& high_score, Number& turn, String& message) const;
 

@@ -70,6 +70,7 @@ public:
 	std::pair<bool, String> solve_message(const Message& message);
 
 	bool purchase_item(const Item& item);
+
 };
 
 /* Message/advert */

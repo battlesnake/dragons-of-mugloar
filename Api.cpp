@@ -1,6 +1,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
+#include <cstdio>
 #include <stdlib.h>
 
 #include <cpr/cpr.h>
@@ -11,6 +12,14 @@
 
 #include "Api.hpp"
 
+using std::string;
+using std::function;
+using std::cerr;
+using std::endl;
+using std::runtime_error;
+using std::to_string;
+using std::printf;
+
 namespace mugloar {
 
 static bool debug_api = getenv("DEBUG_API") != nullptr;
@@ -20,10 +29,10 @@ enum Method {
 	POST
 };
 
-static void execute_request(Method method, const std::string& base, const std::string& path, rapidjson::Document& response)
+static void execute_request(Method method, const string& base, const string& path, rapidjson::Document& response)
 {
 	if (debug_api) {
-		std::cerr << (method == GET ? "GET" : "POST") << " \t" << "... " << path << std::endl;
+		cerr << (method == GET ? "GET" : "POST") << " \t" << "... " << path << endl;
 	}
 
 	cpr::Url url = base + path;
@@ -31,31 +40,33 @@ static void execute_request(Method method, const std::string& base, const std::s
 	auto r = method == GET ? cpr::Get(url) : cpr::Post(url);
 
 	if (debug_api) {
-		std::cerr << "Status: " << r.status_code << std::endl;
+		cerr << "Status: " << r.status_code << endl;
 	}
 
 	if (r.status_code == 400) {
 		rapidjson::Document err;
 		err.Parse(r.text.c_str());
-		throw std::runtime_error("HTTP code " + std::to_string(r.status_code) + ": " + err["error"].GetString());
+		throw runtime_error(string("Bad request: ") + err["error"].GetString());
 	} else if (r.status_code == 410) {
-		throw std::runtime_error("u ded");
+		throw runtime_error("u ded");
+	} else if (r.status_code == 502) {
+		throw runtime_error("Bad Gateway");
 	} else if (r.status_code != 200) {
-		throw std::runtime_error("HTTP code " + std::to_string(r.status_code));
+		throw runtime_error("HTTP code " + to_string(r.status_code));
 	}
 
 	if (debug_api) {
-		std::cerr << "Body: " << std::endl << r.text << std::endl;
+		cerr << "Body: " << endl << r.text << endl;
 	}
 
 	response.Parse(r.text.c_str());
 
 	if (debug_api) {
-		std::cerr << std::endl;
+		cerr << endl;
 	}
 }
 
-Api::Api(std::string base) :
+Api::Api(string base) :
 	base(base)
 {
 }
@@ -82,12 +93,36 @@ void Api::investigate_reputation(const GameId& game_id, Number& people, Number& 
 	underworld = response["underworld"].GetDouble();
 }
 
-void Api::get_messages(const GameId& game_id, std::function<void(AdId, String, Number, Number, String, bool)> consume_message) const
+void Api::get_messages(const GameId& game_id, function<void(AdId, String, Number, Number, String, Format)> consume_message) const
 {
 	rapidjson::Document response;
 	execute_request(GET, base, "/" + game_id + "/messages", response);
 	/* BUG: API defines root as object with "messages" array-member but example has the array as root */
 	for (const auto& msg : response.GetArray()) {
+		Format format = PLAIN;
+		if (msg.HasMember("encrypted")) {
+			const auto& n = msg["encrypted"];
+			const char *message = msg["message"].GetString();
+			if (n.IsNull()) {
+				format = PLAIN;
+			} else if (n.IsInt64() && n.GetInt64() == 1) {
+				format = BASE64;
+			} else {
+				rapidjson::StringBuffer sb;
+				rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+				n.Accept(writer);
+				cerr << "UNSUPPORTED ENCRYPTION" << endl;
+				cerr << " * spec: " << sb.GetString() << endl;
+				cerr << " * value: " << endl;
+				cerr << "     ";
+				for (const char *p = message; *p; ++p) {
+					fprintf(stderr, "%02hhx ", *p);
+				}
+				cerr << endl;
+
+				throw runtime_error("Unsupported encryption");
+			}
+		}
 		/*
 		 * "Encrypted" field is null/1.
 		 * Non-null indicates that the text fields are base64 encoded.
@@ -101,7 +136,7 @@ void Api::get_messages(const GameId& game_id, std::function<void(AdId, String, N
 			msg["reward"].GetInt64(),
 			msg["expiresIn"].GetInt64(),
 			msg["probability"].GetString(),
-			msg.HasMember("encrypted") && !msg["encrypted"].IsNull()
+			format
 			);
 	}
 }
@@ -119,7 +154,7 @@ void Api::solve_message(const GameId& game_id, const AdId& ad_id, bool& success,
 	message = response["message"].GetString();
 }
 
-void Api::shop_list_items(const GameId& game_id, std::function<void(ItemId, String, Number)> consume_item) const
+void Api::shop_list_items(const GameId& game_id, function<void(ItemId, String, Number)> consume_item) const
 {
 	rapidjson::Document response;
 	execute_request(GET, base, "/" + game_id + "/shop", response);

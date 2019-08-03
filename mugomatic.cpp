@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <random>
 
 #include <getopt.h>
 
@@ -29,6 +30,9 @@ using std::function;
 using std::to_string;
 using std::cerr;
 using std::endl;
+using std::random_device;
+using std::mt19937;
+using std::uniform_int_distribution;
 using mugcollect::State;
 using mugcollect::ActionFeatures;
 
@@ -82,6 +86,9 @@ static string lowercase(const string& in)
 
 static float play_move(mugloar::Game& game, const unordered_map<string, float>& costs)
 {
+	static random_device rd;
+	static mt19937 prng(rd());
+
 	auto state = State(game);
 
 	/* Build list of possible actions and action features */
@@ -138,6 +145,14 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 	base_cost += game.state_rep() * costs.at("state_rep");
 	base_cost += game.underworld_rep() * costs.at("underworld_rep");
 
+	//////////////////////////////////
+	/*
+	 * For now, judge only on action value, since we did no
+	 * cross-correlation / PCA
+	 */
+	base_cost = 0;
+	//////////////////////////////////
+
 	float max_cost = -std::numeric_limits<float>::infinity();
 	function<void()> *max_action = nullptr;
 	string *max_name = nullptr;
@@ -149,6 +164,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 				cost += it->second;
 			} else {
 				cerr << " * Unknown feature: " << word << endl;
+				cost += -1000;
 			}
 		}
 		if (cost > max_cost) {
@@ -162,9 +178,17 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 		throw std::runtime_error("No actions!");
 	}
 
-	cerr << "Action chosen: " << *max_name << endl;
-
-	max_action->operator()();
+	if (max_cost + game.turn() * 5 < -300 && game.gold() > 50) {
+		cerr << "No good action available (best=" << max_cost << "), skipping turn" << endl;
+		/* Skipping doesn't work yet */
+		// game.skip_turn();
+		/* Attempt to buy a random item instead */
+		auto idx = uniform_int_distribution<size_t>(0, game.shop_items().size() - 1)(prng);
+		game.purchase_item(game.shop_items()[idx]);
+	} else {
+		cerr << "Action chosen: (" << max_cost << ") " << *max_name << endl;
+		max_action->operator()();
+	}
 
 	return max_cost;
 

@@ -1,8 +1,13 @@
 #include <vector>
 #include <thread>
+#include <functional>
 
 #include "b64dec.hpp"
 #include "Game.hpp"
+
+using std::function;
+using std::string;
+using std::pair;
 
 namespace mugloar {
 
@@ -32,19 +37,22 @@ void Game::update_reputation()
 void Game::update_messages()
 {
 	_messages.clear();
-	api.get_messages(_id, [this] (AdId ad_id, String message, Number reward, Number expires_in, String probability, bool base64) {
-		if (base64) {
-			ad_id = b64dec(ad_id);
-			message = b64dec(message);
-			probability = b64dec(probability);
+	api.get_messages(_id, [this] (AdId ad_id, String message, Number reward, Number expires_in, String probability, Format format) {
+		function<string(const string&)> decoder = nullptr;
+		switch (format) {
+		case PLAIN: decoder = [] (const string& s) { return s; }; break;
+		case BASE64: decoder = b64dec; break;
 		}
+		ad_id = decoder(ad_id);
+		message = decoder(message);
+		probability = decoder(probability);
 		_messages.push_back({
 			std::move(ad_id),
 			std::move(message),
 			reward,
 			expires_in,
 			probability,
-			base64
+			format != PLAIN
 			});
 	});
 }
@@ -61,7 +69,7 @@ void Game::update_items()
 	});
 }
 
-std::pair<bool, String> Game::solve_message(const Message& message)
+pair<bool, String> Game::solve_message(const Message& message)
 {
 	bool success;
 	String explanation;

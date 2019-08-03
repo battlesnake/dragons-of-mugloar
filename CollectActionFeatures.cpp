@@ -12,12 +12,15 @@ static void words_of(vector<string_view>& res, const string_view& sv)
 {
 	const auto size = sv.size();
 	for (size_t it = 0, begin = 0; it < size; ++it) {
-		bool wordend = isspace(sv[it]) || it + 1 == size;
+		bool wordend = isspace(sv[it]);
+		bool strend = it + 1 == size;
 		if (wordend) {
 			if (it > begin) {
 				res.emplace_back(sv.substr(begin, it - begin));
 			}
 			begin = it + 1;
+		} else if (strend) {
+			res.emplace_back(sv.substr(begin, size - begin));
 		}
 	}
 }
@@ -27,7 +30,8 @@ static void word_pairs_of(vector<string_view>& res, const string_view& sv)
 {
 	const auto size = sv.size();
 	for (size_t it = 0, begin = 0, prebegin = 0; it < size; ++it) {
-		bool wordend = isspace(sv[it]) || it + 1 == size;
+		bool wordend = isspace(sv[it]);
+		bool strend = it + 1 == size;
 		if (wordend) {
 			if (it > begin) {
 				if (prebegin < begin && begin < it) {
@@ -36,6 +40,10 @@ static void word_pairs_of(vector<string_view>& res, const string_view& sv)
 				prebegin = begin;
 			}
 			begin = it + 1;
+		} else if (strend) {
+			if (prebegin < begin && begin < size) {
+				res.emplace_back(sv.substr(prebegin, size - prebegin));
+			}
 		}
 	}
 }
