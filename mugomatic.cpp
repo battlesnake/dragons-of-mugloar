@@ -211,18 +211,20 @@ static void help()
 int main(int argc, char *argv[])
 {
 	const char *infilename = nullptr;
+	const char *outfilename = nullptr;
 	char c;
 	bool once = false;
-	while ((c = getopt(argc, argv, "hi:1")) != -1) {
+	while ((c = getopt(argc, argv, "hi:o:1")) != -1) {
 		switch (c) {
 		case 'h': help(); return 1;
 		case 'i': infilename = optarg; break;
+		case 'o': outfilename = optarg; break;
 		case '1': once = true; break;
 		case '?': help(); return 1;
 		}
 	}
 
-	if (!infilename || optind != argc) {
+	if (!infilename || !outfilearg || optind != argc) {
 		help();
 		return 1;
 	}

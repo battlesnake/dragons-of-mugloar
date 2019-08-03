@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "b64dec.hpp"
+#include "rot13dec.hpp"
 #include "Game.hpp"
 
 using std::function;
@@ -42,6 +43,7 @@ void Game::update_messages()
 		switch (format) {
 		case PLAIN: decoder = [] (const string& s) { return s; }; break;
 		case BASE64: decoder = b64dec; break;
+		case ROT13: decoder = rot13dec; break;
 		}
 		ad_id = decoder(ad_id);
 		message = decoder(message);

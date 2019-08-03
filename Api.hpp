@@ -8,7 +8,8 @@ namespace mugloar {
 enum Format
 {
 	PLAIN,
-	BASE64
+	BASE64,
+	ROT13
 };
 
 /* Makes calls to API endpoints and returns parsed response fields */

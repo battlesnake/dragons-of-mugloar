@@ -3,7 +3,12 @@
 bin := mugcli mugcollect muglearn mugomatic
 
 # Objects to make
-obj := Api.oxx Game.oxx Menu.oxx CollectState.oxx CollectActionFeatures.oxx b64dec.oxx $(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
+obj := \
+	Api.oxx Game.oxx \
+	Menu.oxx \
+	CollectState.oxx CollectActionFeatures.oxx \
+	b64dec.oxx rot13dec.oxx \
+	$(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
 
 libs := -lcurl -licuuc -lpthread -lm
 
@@ -22,7 +27,7 @@ CXXFLAGS := \
 	-MMD \
 	-g -O$(O) \
 	-pipe \
-	-Wall -Wextra -Werror
+	-Wall -Wno-logical-op-parentheses -Wextra -Werror
 
 # Use address- and undefined-behaviour- sanitizers when debugging
 ifeq ($(O),0)

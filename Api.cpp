@@ -107,6 +107,8 @@ void Api::get_messages(const GameId& game_id, function<void(AdId, String, Number
 				format = PLAIN;
 			} else if (n.IsInt64() && n.GetInt64() == 1) {
 				format = BASE64;
+			} else if (n.IsInt64() && n.GetInt64() == 2) {
+				format = ROT13;
 			} else {
 				rapidjson::StringBuffer sb;
 				rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
