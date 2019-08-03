@@ -1,19 +1,38 @@
 #include <iostream>
 #include <string>
 
+#include <getopt.h>
+
 #include "Menu.hpp"
 #include "AnsiCodes.hpp"
 #include "Game.hpp"
 
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::to_string;
+
+static void help()
+{
+	cerr << "No parameters expected" << endl;
+}
+
 int main(int argc, char *argv[])
 {
-	(void) argc;
-	(void) argv;
+	char c;
+	while ((c = getopt(argc, argv, "h")) != -1) {
+		switch (c) {
+		case 'h': help(); return 1;
+		case '?': help(); return 1;
+		}
+	}
 
-	using std::cerr;
-	using std::cout;
-	using std::endl;
-	using std::to_string;
+	if (optind != argc) {
+		help();
+		return 1;
+	}
+
+	mugloar::Api api;
 
 	bool quit = false;
 
@@ -21,7 +40,6 @@ int main(int argc, char *argv[])
 
 		cerr << "Game starting..." << endl;
 
-		mugloar::Api api;
 		mugloar::Game game(api);
 
 		cerr << "Game started!" << endl << endl;

@@ -20,8 +20,8 @@ void Game::turn_started()
 	}
 	/* Reputation update advances a turn (or otherwise has some other annoying side-effect), do it before updating others */
 	update_reputation();
-	update_messages();
 	update_items();
+	update_messages();
 }
 
 void Game::update_reputation()

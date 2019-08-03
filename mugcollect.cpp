@@ -19,8 +19,8 @@
 #include <unicode/locid.h>
 
 #include "Game.hpp"
-#include "LearnState.hpp"
-#include "LearnActionFeatures.hpp"
+#include "CollectState.hpp"
+#include "CollectActionFeatures.hpp"
 
 using std::thread;
 using std::atomic;
@@ -203,15 +203,16 @@ int main(int argc, char *argv[])
 	char c;
 	int worker_count = 4;
 	const char *outfilename = nullptr;
-	while ((c = getopt(argc, argv, "p:o:")) != -1) {
+	while ((c = getopt(argc, argv, "hp:o:")) != -1) {
 		switch (c) {
 		case 'h': help(); return 1;
 		case 'p': worker_count = std::atoi(optarg); break;
 		case 'o': outfilename = optarg; break;
+		case '?': help(); return 1;
 		}
 	}
 
-	if (!outfilename || worker_count <= 0) {
+	if (!outfilename || worker_count <= 0 || optind != argc) {
 		help();
 		return 1;
 	}

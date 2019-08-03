@@ -1,9 +1,9 @@
 # Binaries to make
 # Name "mugomatic" is tribute to Rogueomatic
-bin := mugcli mugomatic mugcollect
+bin := mugcli mugcollect muglearn mugomatic
 
 # Objects to make
-obj := Api.oxx Game.oxx Menu.oxx LearnState.oxx LearnActionFeatures.oxx b64dec.oxx $(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
+obj := Api.oxx Game.oxx Menu.oxx CollectState.oxx CollectActionFeatures.oxx b64dec.oxx $(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
 
 libs := -lcurl -licuuc -lpthread -lm
 
@@ -21,19 +21,18 @@ CXXFLAGS := \
 	-Ilib/base-n/include \
 	-MMD \
 	-g -O$(O) \
-	-ffunction-sections -fdata-sections -Wl,--gc-sections \
-	-pipe
+	-pipe \
+	-Wall -Wextra -Werror
 
+# Use address- and undefined-behaviour- sanitizers when debugging
 ifeq ($(O),0)
 libs += -lasan -lubsan
 CXXFLAGS += -fsanitize=address -fsanitize=undefined
 endif
 
+# Prefer clang where available
 ifneq ($(shell which clang++ 2>/dev/null),)
 CXX := clang++
-CXXFLAGS += -Wall -Wextra -Wno-unused-command-line-argument -Werror
-else
-CXXFLAGS += -Wall -Wextra -Werror
 endif
 
 .PHONY: all
