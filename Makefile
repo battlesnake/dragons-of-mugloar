@@ -47,7 +47,7 @@ all: $(bin)
 
 .PHONY: clean
 clean:
-	rm -f -- $(bin) $(obj) $(bin:%=%.oxx) $(obj:%.oxx=%.d)
+	rm -f -- $(bin) *.d *.oxx
 
 .PHONY: cli
 cli: mugcli
