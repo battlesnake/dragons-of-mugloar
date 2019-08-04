@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -xeuo pipefail
 
 declare -r remote="${1:-}"
 shift
@@ -18,7 +18,7 @@ ssh "$remote" 'if ! which docker &>/dev/null; then sudo apt update && sudo apt i
 ssh "$remote" mkdir -p mugloar
 
 # Sync files over
-rsync -avzl --delete ./ "$remote":mugloar
+rsync -azlv --exclude='.git*' --include={'*.cpp','*.hpp','*.sh',Makefile} --exclude='*' ./ "$remote":mugloar
 
 # Run tasks(s)
-ssh "$remote" env -C mugloar ./runner.sh "$@"
+ssh -t "$remote" env -C mugloar ./runner.sh "$@"
