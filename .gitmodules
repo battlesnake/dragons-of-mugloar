@@ -7,6 +7,3 @@
 [submodule "lib/base-n"]
 	path = lib/base-n
 	url = https://github.com/azawadzki/base-n
-[submodule "lib/MiniDNN"]
-	path = lib/MiniDNN
-	url = https://github.com/yixuan/MiniDNN
