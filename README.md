@@ -97,4 +97,7 @@ This would use the end-game scores to tune the costfunction parameters, optimisi
 It still will not be able to learn fairly some simple strategic concepts, such as "Buy health potion if only 1 life remaining" or "Do not buy other items unless it'll leave enough gold for a health potion".
 These could possibly be learned by adding extra features (e.g. "1 life left", "2 lives left", "over 150 gold", "over 350 gold"), and by having the learning process punish the previous _N_ actions for a loss of life, rather than just the immediate action.
 
-Due to the time required to implement this, and the questionable quality of the return, I decided to abort this approach and go for a 1980s-style deterministic model instead.
+It also will not be able to learn that buying some item can increase the chance of success later on.
+This could be determined from the training data fairly easily, but the AI won't learn to actually buy the item to provide long-term gains - only to increase the instantaneous cost.
+
+Due to the time required to implement this approach, and the questionable quality of the return, I decided to abort this approach and go for a 1980s-style deterministic model instead.
