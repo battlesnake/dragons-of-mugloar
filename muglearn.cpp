@@ -7,8 +7,6 @@
 
 #include <getopt.h>
 
-#include <MiniDNN.h>
-
 #include "Locale.hpp"
 #include "AnsiCodes.hpp"
 
@@ -23,14 +21,6 @@ using std::make_pair;
 using std::cerr;
 using std::endl;
 using std::getline;
-
-using MiniDNN::Matrix;
-using MiniDNN::Network;
-using MiniDNN::RMSProp;
-using MiniDNN::ReLU;
-using MiniDNN::Sigmoid;
-using MiniDNN::Identity;
-using MiniDNN::VerboseCallback;
 
 /* Structure to hold training data */
 struct Dataset
@@ -235,7 +225,7 @@ static vector<pair<float, size_t>> calc_feature_costs(const Dataset& dataset, co
 	return feature_cost;
 }
 
-static void save_linear_map(const Dataset& dataset, const vector<pair<float, size_t>>& feature_cost, const string& filename)
+static void save_result(const Dataset& dataset, const vector<pair<float, size_t>>& feature_cost, const string& filename)
 {
 	cerr << "Saving result to file " << filename << endl;
 
@@ -253,7 +243,6 @@ static void help()
 	cerr << "Arguments:" << endl;
 	cerr << "  -i input-filename" << endl;
 	cerr << "  -o output-filename" << endl;
-	cerr << "  -m [ linear / neural ]" << endl;
 }
 
 int main(int argc, char *argv[])
@@ -262,33 +251,17 @@ int main(int argc, char *argv[])
 
 	const char *infilename = nullptr;
 	const char *outfilename = nullptr;
-	const char *modestr = "linear";
 	char c;
-	while ((c = getopt(argc, argv, "hi:o:m:")) != -1) {
+	while ((c = getopt(argc, argv, "hi:o:")) != -1) {
 		switch (c) {
 		case 'h': help(); return 1;
 		case 'i': infilename = optarg; break;
 		case 'o': outfilename = optarg; break;
-		case 'm': modestr = optarg; break;
 		case '?': help(); return 1;
 		}
 	}
 
 	if (!infilename || !outfilename || optind != argc) {
-		help();
-		return 1;
-	}
-
-	enum Mode {
-		LINEAR,
-		NEURAL
-	} mode;
-
-	if (strcmp(modestr, "linear") == 0) {
-		mode = LINEAR;
-	} else if (strcmp(modestr, "neural") == 0) {
-		mode = NEURAL;
-	} else {
 		help();
 		return 1;
 	}
@@ -299,16 +272,8 @@ int main(int argc, char *argv[])
 
 	const auto row_cost = calc_row_costs(dataset);
 
-	if (mode == LINEAR) {
+	const auto feature_cost = calc_feature_costs(dataset, row_cost);
 
-		const auto feature_cost = calc_feature_costs(dataset, row_cost);
-
-		save_linear_map(dataset, feature_cost, outfilename);
-
-	} else if (mode == NEURAL) {
-
-		Matrix hidden;
-		Matrix output;
-	}
+	save_result(dataset, feature_cost, outfilename);
 
 }
