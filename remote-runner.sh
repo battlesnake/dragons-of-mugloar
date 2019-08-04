@@ -5,7 +5,7 @@ set -xeuo pipefail
 declare -r remote="${1:-}"
 shift
 
-if [ -z "$remote" ]; then
+if [ -z "$remote" ] || ! ssh "$remote" true; then
 	echo >&2 "First argument must specify remote (e.g. user@206.81.22.146)"
 	echo >&2 "If remote does not have docker installed, we will install assuming Debain/Ubuntu (apt)"
 	exit 1
