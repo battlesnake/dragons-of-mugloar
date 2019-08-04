@@ -44,19 +44,22 @@ To run the command-line interactive interface:
 	./mugcli
 
 
-To collect training data for the AI player, using 200 workers:
+To collect training data for the AI player, using 20 workers:
 
-	./mugcollect -o training.csv -p 200
+	# This will run endlessly unless you quit it with <q> <ENTER>
+	./mugcollect -o training.dat -p 20
 
 
 To train the artificial intelligence using the previously-collected data:
 
-	./TODO_NOT_IMPLEMENTED_YET training.csv
+	./muglearn -i training.dat -o feature_score.dat
 
 
-To run the fully-automated luxury cromulent dragon trainer:
+To run the fully-automated luxury cromulent dragon trainer with 20 workers:
 
-	./mugomatic neuralnet.csv
+	# This will run endlessly unless you quit it with <q> <ENTER>
+	./mugomatic -i feature_score.dat -o training.dat -s scores.dat -p 20
+	# Resulting scores (and game IDs) are appended to scores.dat
 
 
 To delete the compiled binaries and intermediate files out:
