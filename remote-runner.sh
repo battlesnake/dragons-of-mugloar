@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -xeuo pipefail
+set -euo pipefail
 
 declare -r remote="${1:-}"
 shift
@@ -10,6 +10,8 @@ if [ -z "$remote" ] || ! ssh "$remote" true; then
 	echo >&2 "If remote does not have docker installed, we will install assuming Debain/Ubuntu (apt)"
 	exit 1
 fi
+
+set -x
 
 # Install docker if needed
 ssh "$remote" 'if ! which docker &>/dev/null; then sudo apt update && sudo apt install -y docker.io; fi'
