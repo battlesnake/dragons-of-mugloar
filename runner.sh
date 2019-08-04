@@ -22,9 +22,9 @@ function show_help {
 	echo >&2 "Commands:"
 	echo >&2 " * clean - remove build outputs"
 	echo >&2 " * build - build project"
-	echo >&2 " * collect - collect training data from random play"
-	echo >&2 " * learn - generate tactical data from training data"
-	echo >&2 " * play - play using tactical data, generates more training data and a score table"
+	echo >&2 " * collect - collect training data from random play (training.dat)"
+	echo >&2 " * learn - generate tactical data from training data (training.dat => feature_score.dat)"
+	echo >&2 " * play - play using tactical data, generates more training data and a score table (feature_score.dat =>> scores.dat)"
 	echo >&2 ""
 }
 

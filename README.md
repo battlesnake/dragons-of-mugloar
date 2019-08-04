@@ -61,6 +61,14 @@ And recklessly nuking the repo has the usual form:
     git clean -fdx
 
 
+# Task runner
+
+If you have docker installed, you can make use of the task runner script, which runs all tasks inside a container, ensuring that the necessary tools and libraries are available:
+
+	# Show available commands
+    ./runner.sh help
+
+
 # Hardcoded rules approach
 
 TODO
