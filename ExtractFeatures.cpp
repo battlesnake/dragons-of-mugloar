@@ -113,8 +113,8 @@ void extract_game_state(std::unordered_map<std::string, float>& features, const 
 	for (const auto& [name, count] : state.items) {
 		features["item:" + name] = count;
 	}
-	features["lives:" + to_string(state.lives)] = 1;
-	features["level:" + to_string(state.level)] = 1;
+	features["lives:" + to_string(int(state.lives))] = 1;
+	features["level:" + to_string(int(state.level))] = 1;
 	features["gold:50min=" + to_string(int(state.gold / 50) * 50)] = 1;
 }
 
