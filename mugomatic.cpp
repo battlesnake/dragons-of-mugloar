@@ -106,7 +106,10 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 	for (const auto& item : game.shop_items()) {
 		/*
 		 * Without this, the AI will just attempt to buy healing potions
-		 * every turn.
+		 * every turn, since the average score of that (including fails)
+		 * is always going to be bigger than non-trivial "solves".
+		 * We could fix this by assigning a penalty to failed buy
+		 * attempts, but this could still leave us stuck in a loop.
 		 *
 		 * With this, the AI will probably buy a healing potion whenever
 		 * it can afford to.
@@ -221,7 +224,7 @@ static void worker_task(int index, const mugloar::Api& api, const Costs& costs)
 			continue;
 		}
 
-		cerr << "ID=" << game.id() << ", score=" << game.score() << ", turns=" << game.turn() << ", level=" << game.level() << endl;
+		cerr << "ID=" << game.id() << ", score=" << game.score() << ", turns=" << game.turn() << ", level=" << game.level() << ", lives=" << game.lives() << endl;
 
 		{
 			scoped_lock lock(io_mutex);
