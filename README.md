@@ -74,6 +74,29 @@ And recklessly nuking the repo has the usual form:
     git clean -fdx
 
 
+# Costed feature-set approach
+
+ * We represent the state of a game as a feature vector.
+
+ * Each possible action is also represented as a feature vector.
+
+ * Each feature has a "cost".
+
+ * The cost of an action is the sum of costs of all features in the game-state and in the specific action.
+
+ * Each turn, the highest-cost action is chosen (with cost-check to eliminate purchases with insufficient gold, to prevent loops).
+
+Failed purchase attempts could be useful for skipping turns, in the hope that bad messages get replaced with good ones.
+But we haven't implemented that decision-making yet.
+We do have the necessary training data collected to approach this though.
+
+While this approach is unlikely to topple the current high-score (no normalisation, no covariance / feature correlation, no memory), it has given some useful information:
+
+ * The "probability" values for solving messages, and the relative risk of each one.
+
+ * "Help defend" tasks are practically suicide.  This may not be true if you have lots of high-value items, but the AI doesn't buy much besides health potions.
+
+
 # Neural-network approach
 
 We can improve the intelligence of our AI by using a neural network with a single hidden-layer and non-linear transforms (e.g. sigmoid).
