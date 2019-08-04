@@ -204,23 +204,22 @@ static vector<pair<float, size_t>> calc_feature_costs(const Dataset& dataset, co
 	feature_cost.resize(dataset.cols);
 	std::fill(feature_cost.begin(), feature_cost.end(), make_pair(0.0f, size_t(0)));
 
-	for (size_t row = 0; row < dataset.rows; ++row) {
-		/* Accumulate cost per-feature */
-		for (size_t col = 0; col < dataset.cols; ++col) {
-			auto& [total_cost, samples] = feature_cost[col];
+	/* Accumulate cost per-feature */
+	for (size_t col = 0; col < dataset.cols; ++col) {
+		auto& [total_cost, samples] = feature_cost[col];
+		for (size_t row = 0; row < dataset.rows; ++row) {
 			const auto& cost = row_cost[row];
 			const auto& input = dataset(row, col);
 			if (input != 0) {
-				total_cost += cost * input;
+				total_cost += cost; // * input;
 				samples++;
 			}
 		}
 	}
 
 	for (auto& [value, samples] : feature_cost) {
-		if (samples > 0) {
-			value /= samples;
-		}
+		/* We only weakly consider features that we haven't sampled much */
+		value /= (samples + 20);
 	}
 
 	return feature_cost;
