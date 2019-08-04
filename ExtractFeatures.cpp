@@ -2,7 +2,7 @@
 #include <unicode/ustream.h>
 #include <unicode/locid.h>
 
-#include "CollectActionFeatures.hpp"
+#include "ExtractFeatures.hpp"
 
 using std::string;
 using std::string_view;
@@ -11,7 +11,8 @@ using std::unordered_map;
 using std::to_string;
 
 /* Helper functions for decomposing text strings to words */
-namespace detail {
+namespace detail
+{
 
 /* Convert string to lowercase, assuming UTF-8 encoding */
 static string lowercase(const string& in)
@@ -67,7 +68,8 @@ static void word_pairs_of(vector<string_view>& res, const string_view& sv)
 }
 
 
-namespace mugloar {
+namespace mugloar
+{
 
 void extract_action_features(unordered_map<string, float>& features, const string& type, const string& description)
 {
@@ -97,6 +99,51 @@ void extract_action_features(unordered_map<string, float>& features, const Messa
 void extract_action_features(unordered_map<string, float>& features, const Item& item)
 {
 	extract_action_features(features, "buy", item.name);
+}
+
+void extract_game_state(std::unordered_map<std::string, float>& features, const GameState& state)
+{
+	features["game:score"] = state.score;
+	features["game:lives"] = state.lives;
+	features["game:gold"] = state.gold;
+	features["game:rep_people"] = state.rep_people;
+	features["game:rep_state"] = state.rep_state;
+	features["game:rep_underworld"] = state.rep_underworld;
+	for (const auto& [name, count] : state.items) {
+		features["item:" + name] = count;
+	}
+}
+
+void extract_game_diff_state(std::unordered_map<std::string, float>& features, const GameStateDiff& state_diff)
+{
+	features["diff:score"] = state_diff.score;
+	features["diff:lives"] = state_diff.lives;
+	features["diff:gold"] = state_diff.gold;
+	features["diff:rep_people"] = state_diff.rep_people;
+	features["diff:rep_state"] = state_diff.rep_state;
+	features["diff:rep_underworld"] = state_diff.rep_underworld;
+}
+
+GameState::GameState(const Game& game) :
+	score(game.score()),
+	lives(game.lives()),
+	gold(game.gold()),
+	rep_people(game.people_rep()),
+	rep_state(game.state_rep()),
+	rep_underworld(game.underworld_rep())
+{
+}
+
+GameStateDiff GameState::operator - (const GameState& r) const
+{
+	GameStateDiff res;
+	res.score = score - r.score;
+	res.lives = lives - r.lives;
+	res.gold = gold - r.gold;
+	res.rep_people = rep_people - r.rep_people;
+	res.rep_state = rep_state - r.rep_state;
+	res.rep_underworld = rep_underworld - r.rep_underworld;
+	return res;
 }
 
 }

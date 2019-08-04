@@ -1,12 +1,25 @@
 #pragma once
-#include <tuple>
 #include <unordered_map>
 #include <string>
+#include <vector>
+#include <tuple>
+
 #include "Game.hpp"
 
 namespace mugloar {
 
-using mugloar::Number;
+/*
+ * Extracts features of an action, that we want to use for training
+ *
+ * Currently:
+ *  * individual words
+ *  * pairs of consecutive words
+ */
+void extract_action_features(std::unordered_map<std::string, float>& features, const std::string& type, const std::string& description);
+
+void extract_action_features(std::unordered_map<std::string, float>& features, const Message& message);
+
+void extract_action_features(std::unordered_map<std::string, float>& features, const Item& item);
 
 struct GameStateDiff
 {
@@ -33,27 +46,9 @@ struct GameState
 	GameState(const GameState&) = default;
 	GameState& operator = (const GameState&) = default;
 
-	GameState(const mugloar::Game& game) :
-		score(game.score()),
-		lives(game.lives()),
-		gold(game.gold()),
-		rep_people(game.people_rep()),
-		rep_state(game.state_rep()),
-		rep_underworld(game.underworld_rep())
-	{
-	}
+	GameState(const mugloar::Game& game);
 
-	GameStateDiff operator - (const GameState& r) const
-	{
-		GameStateDiff res;
-		res.score = score - r.score;
-		res.lives = lives - r.lives;
-		res.gold = gold - r.gold;
-		res.rep_people = rep_people - r.rep_people;
-		res.rep_state = rep_state - r.rep_state;
-		res.rep_underworld = rep_underworld - r.rep_underworld;
-		return res;
-	}
+	GameStateDiff operator - (const GameState& r) const;
 
 };
 

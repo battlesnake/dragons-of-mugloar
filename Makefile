@@ -7,7 +7,7 @@ obj := \
 	Api.oxx Game.oxx \
 	Menu.oxx \
 	Locale.oxx \
-	CollectState.oxx CollectActionFeatures.oxx \
+	ExtractFeatures.oxx \
 	LogEvent.oxx \
 	b64dec.oxx rot13dec.oxx \
 	$(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
