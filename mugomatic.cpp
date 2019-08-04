@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <unordered_map>
 #include <functional>
@@ -21,6 +22,8 @@ using std::string;
 using std::string_view;
 using std::ifstream;
 using std::ofstream;
+using std::ostream;
+using std::stringstream;
 using std::vector;
 using std::unordered_map;
 using std::pair;
@@ -29,6 +32,7 @@ using std::function;
 using std::to_string;
 using std::cerr;
 using std::endl;
+using std::flush;
 using std::atomic;
 using std::thread;
 using std::mutex;
@@ -82,7 +86,7 @@ static unordered_map<string, float> read_costs(const vector<vector<string>>& dat
 	return costs;
 }
 
-static float play_move(mugloar::Game& game, const unordered_map<string, float>& costs)
+static float play_move(mugloar::Game& game, const unordered_map<string, float>& costs, ostream& ss)
 {
 	/* Build list of possible actions and action features */
 	vector<tuple<string, function<void()>, function<void()>, float>> actions;
@@ -135,6 +139,8 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 		/* Build feature set */
 		features.clear();
 		extract_game_state(features, pre);
+		features.erase("game:score");
+		features.erase("game:lives");
 		get_features();
 		/* Calculate total cost of features */
 		for (const auto& [feature, value] : features) {
@@ -143,10 +149,10 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 				score += value * it->second;
 			} else {
 				if (!unknown) {
-					cerr << " * Unknown feature:";
+					ss << " * Unknown feature:";
 					unknown = true;
 				}
-				cerr << "  [" << feature << "]";
+				ss << "  [" << feature << "]";
 				score += -100;
 			}
 		}
@@ -155,7 +161,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 		}
 	}
 	if (unknown) {
-		cerr << endl;
+		ss << endl;
 	}
 
 	if (max == nullptr) {
@@ -163,7 +169,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 	}
 	const auto& [name, execute, get_features, max_score] = *max;
 
-	cerr << Strong(Magenta("Action chosen:")) << " cost=" << Emph(max_score) << " name=" << Emph(name) << endl;
+	ss << Strong(Magenta("Action chosen:")) << " cost=" << Emph(max_score) << " name=" << Emph(name) << endl;
 
 	execute();
 
@@ -185,13 +191,20 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 static void play_game(mugloar::Game& game, const Costs& costs)
 {
 	while (!stopping && !game.dead()) {
-		cerr << Strong("Game=") << Emph(Cyan(game.id()))
+		stringstream ss;
+		ss << Strong("Game=") << Emph(Cyan(game.id()))
 			<< Strong(", Turn=") << Emph(int(game.turn()))
 			<< Strong(", Score=") << Green(Strong(Emph(int(game.score()))))
-			<< Strong(", Lives=") << Red(Strong(Emph(int(game.lives()))))
+			<< Strong(", Level=") << Red(Strong(Emph(int(game.level()))))
+			<< Strong(", Lives=") << Magenta(Strong(Emph(int(game.lives()))))
 			<< Strong(", Gold=") << Yellow(Strong(Emph(int(game.gold()))))
 			<< endl;
-		play_move(game, costs);
+		play_move(game, costs, ss);
+		ss << flush;
+		{
+			scoped_lock lock(io_mutex);
+			cerr << ss.rdbuf() << endl;
+		}
 	}
 }
 
