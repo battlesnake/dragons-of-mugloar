@@ -139,14 +139,22 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 		extract_game_state(features, pre);
 		get_features();
 		/* Calculate total cost of features */
+		bool unknown = false;
 		for (const auto& [feature, value] : features) {
 			auto it = costs.find(feature);
 			if (it != costs.end()) {
 				score += value * it->second;
 			} else {
-				cerr << " * Unknown feature: " << feature << endl;
+				if (!unknown) {
+					cerr << " * Unknown feature:";
+					unknown = true;
+				}
+				cerr << "  [" << feature << "]";
 				score += -100;
 			}
+		}
+		if (unknown) {
+			cerr << endl;
 		}
 		if (max == nullptr || score > std::get<3>(*max)) {
 			max = &action;
