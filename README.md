@@ -50,26 +50,6 @@ To run the command-line interactive interface:
 	./mugcli
 
 
-To collect training data for the AI player, using 20 workers:
-
-	# This will run endlessly unless you quit it with <q> <ENTER>
-	./mugcollect -o training.dat -p 20
-
-
-To train the artificial intelligence using the previously-collected data:
-
-	# This uses a dumb linear model and manually-weighted costfunction
-	# This also uses insane amounts of RAM.  I run it on a 64GB cloud server.
-	./muglearn -i training.dat -o feature_score.dat
-
-
-To run the fully-automated luxury cromulent dragon trainer with 20 workers:
-
-	# This will run endlessly unless you quit it with <q> <ENTER>
-	./mugomatic -i feature_score.dat -o training.dat -s scores.dat -p 20
-	# Resulting scores (and game IDs) are appended to scores.dat
-
-
 To delete the compiled binaries and intermediate files out:
 
     make clean
@@ -79,6 +59,11 @@ And recklessly nuking the repo has the usual form:
 
 	git reset --hard
     git clean -fdx
+
+
+# Hardcoded rules approach
+
+TODO
 
 
 # Costed feature-set approach
@@ -102,6 +87,26 @@ While this approach is unlikely to topple the current high-score (no normalisati
  * The "probability" values for solving messages, and the relative risk of each one.
 
  * "Help defend" tasks are practically suicide.  This may not be true if you have lots of high-value items, but the AI doesn't buy much besides health potions.
+
+
+To collect training data for the AI player, using 20 workers:
+
+	# This will run endlessly unless you quit it with <q> <ENTER>
+	./mugcollect -o training.dat -p 20
+
+
+To train the artificial intelligence using the previously-collected data:
+
+	# This uses a dumb linear model and manually-weighted costfunction
+	# This also uses insane amounts of RAM.  I run it on a 64GB cloud server.
+	./muglearn -i training.dat -o feature_score.dat
+
+
+To run the fully-automated luxury cromulent dragon trainer with 20 workers:
+
+	# This will run endlessly unless you quit it with <q> <ENTER>
+	./mugomatic -i feature_score.dat -o training.dat -s scores.dat -p 20
+	# Resulting scores (and game IDs) are appended to scores.dat
 
 
 # Neural-network approach
