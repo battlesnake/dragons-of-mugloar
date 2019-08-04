@@ -1,7 +1,9 @@
 #include <vector>
 #include <thread>
 #include <functional>
+#include <stdexcept>
 
+#include "LowerCase.hpp"
 #include "b64dec.hpp"
 #include "rot13dec.hpp"
 #include "Game.hpp"
@@ -11,6 +13,52 @@ using std::string;
 using std::pair;
 
 namespace mugloar {
+
+static std::vector<string> prob_map {
+	/* Score: -20.4868 */
+	{ "piece of cake" },
+	/* Score: -21.1751 */
+	{ "sure thing" },
+	/* Score: -26.3083 */
+	{ "walk in the park" },
+	/* Score: -30.4547 */
+	{ "quite likely" },
+	/* Score: -35.0355 */
+	{ "hmmm...." },
+	/* Score: -37.837 */
+	{ "gamble" },
+	/* Score: -45.8725 */
+	{ "risky" },
+	/* Score: -46.1147 */
+	{ "rather detrimental" },
+	/* Score: -59.7092 */
+	{ "playing with fire" },
+	/* Score: -84.7348 */
+	{ "suicide mission" },
+	/* Score: -117.938 */
+	{ "impossible" },
+};
+
+Probability lookup_probability(std::string name)
+{
+	name = lowercase(name);
+	Probability p = Probability(0);
+	for (const auto& s : prob_map) {
+		if (s == name) {
+			return p;
+		}
+	}
+	throw std::runtime_error("Invalid probability: " + name);
+}
+
+const std::string& reverse_lookup_probability(Probability p)
+{
+	if (p >= 0 && p < prob_map.size()) {
+		return prob_map[p];
+	} else {
+		throw std::runtime_error("Invalid probability value");
+	}
+}
 
 Game::Game(const Api& api) :
 	api(api)

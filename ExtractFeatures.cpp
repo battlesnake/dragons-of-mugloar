@@ -1,8 +1,5 @@
-#include <unicode/unistr.h>
-#include <unicode/ustream.h>
-#include <unicode/locid.h>
-
 #include "ExtractFeatures.hpp"
+#include "LowerCase.hpp"
 
 using std::string;
 using std::string_view;
@@ -13,16 +10,6 @@ using std::to_string;
 /* Helper functions for decomposing text strings to words */
 namespace detail
 {
-
-/* Convert string to lowercase, assuming UTF-8 encoding */
-static string lowercase(const string& in)
-{
-	icu::UnicodeString us(in.c_str(), "UTF-8");
-	us = us.toLower();
-	string out;
-	us.toUTF8String(out);
-	return out;
-}
 
 /* Emit ordered list of words found in string */
 static void words_of(vector<string_view>& res, const string_view& sv)
@@ -81,7 +68,7 @@ void extract_action_features(unordered_map<string, float>& features, const strin
 	features["action:" + type] = 1;
 
 	for (const auto& w : name_words) {
-		features[detail::lowercase(string(w))] = 1;
+		features[lowercase(string(w))] = 1;
 	}
 }
 
@@ -93,7 +80,7 @@ void extract_action_features(unordered_map<string, float>& features, const Messa
 	} else {
 		features["cipher:" + to_string(int(message.cipher))] = 1;
 	}
-	features["probability:" + detail::lowercase(message.probability)] = 1;
+	features["probability:" + lowercase(message.probability)] = 1;
 }
 
 void extract_action_features(unordered_map<string, float>& features, const Item& item)

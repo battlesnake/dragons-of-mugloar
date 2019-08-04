@@ -13,6 +13,24 @@ struct Message;
 
 struct Item;
 
+enum Probability
+{
+	PIECE_OF_CAKE = 0,
+	SURE_THING,
+	WALK_IN_THE_PARK,
+	QUITE_LIKELY,
+	HMMM,
+	GAMBLE,
+	RISKY,
+	RATHER_DETRIMENTAL,
+	PLAYING_WITH_FIRE,
+	SUICIDE_MISSION,
+	IMPOSSIBLE
+};
+
+Probability lookup_probability(std::string name);
+const std::string& reverse_lookup_probability(Probability p);
+
 /* Main class for a game instance */
 class Game
 {

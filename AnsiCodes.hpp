@@ -8,9 +8,21 @@ class AnsiCodeWrap
 	std::string s;
 
 public:
-	AnsiCodeWrap(std::string s) :
+	AnsiCodeWrap(const std::string& s) :
 		s("\x1b[" + std::to_string(begin) + "m" + s + "\x1b[" + std::to_string(end) + "m") { }
-	operator std::string () const { return s; }
+
+	AnsiCodeWrap(const char *s) :
+		AnsiCodeWrap(std::string(s)) { }
+
+	template <int begin2, int end2>
+	AnsiCodeWrap(const AnsiCodeWrap<begin2, end2>& acw) :
+		AnsiCodeWrap(std::string(acw)) { }
+
+	template <typename T>
+	AnsiCodeWrap(const T& value) :
+		AnsiCodeWrap(std::to_string(value)) { }
+
+	operator const std::string& () const { return s; }
 
 };
 
