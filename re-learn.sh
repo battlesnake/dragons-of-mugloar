@@ -2,8 +2,8 @@
 
 set -ex
 
-./mugcollect -o training.csv -p 20
+./mugcollect -o training.dat -p 100
 
-./muglearn -i training.csv -o feature_score.lst
+./muglearn -i training.dat -o feature_score.dat
 
-./mugomatic -i feature_score.lst
+./mugomatic -i feature_score.dat -o training.dat -s scores.dat -p 100

@@ -1,61 +1,29 @@
 #include "CollectState.hpp"
 
-namespace detail {
-
-/* Helper for implementing piecewise operations on tuples */
-template <typename... Ts, std::size_t... Is, typename BinaryOp>
-static inline std::tuple<Ts...> tuple_piecewise_helper(
-	const std::tuple<Ts...>& l,
-	const std::tuple<Ts...>& r,
-	BinaryOp op,
-	std::index_sequence<Is...>)
-{
-	return { op(std::get<Is>(l), std::get<Is>(r)) ... };
-}
-
-/* Piecewise operations on tuples */
-template <typename... Ts, typename BinaryOp>
-static inline std::tuple<Ts...> tuple_piecewise(
-	const std::tuple<Ts...>& l,
-	const std::tuple<Ts...>& r,
-	BinaryOp op)
-{
-	return tuple_piecewise_helper(l, r, op, std::make_index_sequence<sizeof...(Ts)>{});
-}
-
-}
-
-
-namespace mugcollect
+namespace mugloar
 {
 
-State::State(const mugloar::Game& game) :
-	vector(
-		game.dead() ? 1 : 0,
-		game.lives(),
-		game.score(),
-		game.people_rep(),
-		game.state_rep(),
-		game.underworld_rep())
+void extract_game_state(std::unordered_map<std::string, float>& features, const GameState& state)
 {
-	/* List of item IDs and counts */
-	items.reserve(game.own_items().size());
-	for (const auto& item : game.own_items()) {
-		auto [it, ignore] = items.try_emplace(item.id, 0);
-		it->second++;
+	features["game:score"] = state.score;
+	features["game:lives"] = state.lives;
+	features["game:gold"] = state.gold;
+	features["game:rep_people"] = state.rep_people;
+	features["game:rep_state"] = state.rep_state;
+	features["game:rep_underworld"] = state.rep_underworld;
+	for (const auto& [name, count] : state.items) {
+		features["item:" + name] = count;
 	}
 }
 
-State::State(const StateVector& v) :
-	vector(v)
+void extract_game_diff_state(std::unordered_map<std::string, float>& features, const GameStateDiff& state_diff)
 {
-}
-
-/* Calculate piecewise difference between states */
-State State::operator - (const State& rhs) const
-{
-	return detail::tuple_piecewise(vector, rhs.vector,
-		[] (auto l, auto r) { return l - r; });
+	features["diff:score"] = state_diff.score;
+	features["diff:lives"] = state_diff.lives;
+	features["diff:gold"] = state_diff.gold;
+	features["diff:rep_people"] = state_diff.rep_people;
+	features["diff:rep_state"] = state_diff.rep_state;
+	features["diff:rep_underworld"] = state_diff.rep_underworld;
 }
 
 }

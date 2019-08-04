@@ -3,16 +3,21 @@
 #include <string>
 #include <vector>
 
-namespace mugcollect {
+#include "Game.hpp"
 
-/* Represents features of an action, that we want to use for training */
-struct ActionFeatures
-{
-	/* Set of words and word-pairs */
-	std::unordered_set<std::string> words;
+namespace mugloar {
 
-	ActionFeatures(const std::string& type, const std::string& name, const std::vector<std::string>& other);
+/*
+ * Extracts features of an action, that we want to use for training
+ *
+ * Currently:
+ *  * individual words
+ *  * pairs of consecutive words
+ */
+void extract_action_features(std::unordered_map<std::string, float>& features, const std::string& type, const std::string& description);
 
-};
+void extract_action_features(std::unordered_map<std::string, float>& features, const Message& message);
+
+void extract_action_features(std::unordered_map<std::string, float>& features, const Item& item);
 
 }

@@ -1,3 +1,6 @@
+#include <atomic>
+#include <mutex>
+#include <thread>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -13,15 +16,16 @@
 #include <unicode/ustream.h>
 #include <unicode/locid.h>
 
-#include "Menu.hpp"
-#include "AnsiCodes.hpp"
+#include "Locale.hpp"
 #include "Game.hpp"
 #include "CollectState.hpp"
 #include "CollectActionFeatures.hpp"
+#include "LogEvent.hpp"
 
 using std::string;
 using std::string_view;
 using std::ifstream;
+using std::ofstream;
 using std::vector;
 using std::unordered_map;
 using std::pair;
@@ -33,8 +37,20 @@ using std::endl;
 using std::random_device;
 using std::mt19937;
 using std::uniform_int_distribution;
-using mugcollect::State;
-using mugcollect::ActionFeatures;
+using std::atomic;
+using std::thread;
+using std::mutex;
+using std::scoped_lock;
+using namespace mugloar;
+
+using Costs = unordered_map<string, float>;
+
+static mutex io_mutex;
+
+static ofstream events;
+static ofstream scores;
+
+static atomic<bool> stopping { false };
 
 /* Read file cells */
 static vector<vector<string>> read_file(const string& in)
@@ -74,43 +90,40 @@ static unordered_map<string, float> read_costs(const vector<vector<string>>& dat
 	return costs;
 }
 
-/* Convert string to lowercase, assuming UTF-8 encoding */
-static string lowercase(const string& in)
+struct MoveGen
 {
-	icu::UnicodeString us(in.c_str(), "UTF-8");
-	us = us.toLower();
-	string out;
-	us.toUTF8String(out);
-	return out;
-}
+	mt19937 prng;
 
-static float play_move(mugloar::Game& game, const unordered_map<string, float>& costs)
+	MoveGen()
+	{
+		random_device rd;
+		prng = mt19937(rd());
+	}
+
+	size_t operator () (size_t count)
+	{
+		return uniform_int_distribution<size_t>(0, count - 1)(prng);
+	}
+};
+
+static float play_move(mugloar::Game& game, const unordered_map<string, float>& costs, MoveGen& move_gen)
 {
-	static random_device rd;
-	static mt19937 prng(rd());
-
-	auto state = State(game);
-
 	/* Build list of possible actions and action features */
-	vector<tuple<string, function<void()>, ActionFeatures, float>> actions;
+	vector<tuple<string, function<void()>, function<void()>, float>> actions;
 	actions.reserve(100);
 
+	unordered_map<string, float> features;
+
 	for (const auto& msg : game.messages()) {
-		vector<string> other;
-		if (msg.encoded) {
-			other.emplace_back("encoded");
-		}
-		other.emplace_back(msg.probability);
 		actions.push_back({
 			"SOLVE " + msg.message + " FOR " + to_string(msg.reward) + " GOLD",
 			[&] () { game.solve_message(msg); },
-			ActionFeatures("SOLVE", msg.message, other),
+			[&] () { extract_action_features(features, msg); },
 			0
 			});
 	}
 
 	for (const auto& item : game.shop_items()) {
-		vector<string> other;
 		/*
 		 * Without this, the AI will just attempt to buy healing potions
 		 * every turn.
@@ -126,105 +139,139 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 		if (item.cost > game.gold()) {
 			continue;
 		}
-		other.emplace_back(item.id);
 		actions.push_back({
 			"BUY " + item.name + " FOR " + to_string(item.cost) + " GOLD",
 			[&] () { game.purchase_item(item); },
-			ActionFeatures("BUY", item.name, other),
+			[&] () { extract_action_features(features, item); },
 			0
 			});
 	}
 
 	/* Calculate estimated costs */
 
-	float base_cost = 0;
+	auto pre = GameState(game);
 
-	base_cost += game.lives() * costs.at("lives");
-	base_cost += game.score() * costs.at("score");
-	base_cost += game.people_rep() * costs.at("people_rep");
-	base_cost += game.state_rep() * costs.at("state_rep");
-	base_cost += game.underworld_rep() * costs.at("underworld_rep");
-
-	//////////////////////////////////
-	/*
-	 * For now, judge only on action value, since we did no
-	 * cross-correlation / PCA
-	 */
-	base_cost = 0;
-	//////////////////////////////////
-
-	float max_cost = -std::numeric_limits<float>::infinity();
-	function<void()> *max_action = nullptr;
-	string *max_name = nullptr;
-	for (auto& [name, action, features, cost] : actions) {
-		cost = base_cost;
-		for (const auto& word : features.words) {
-			auto it = costs.find(lowercase(word));
+	typename decltype(actions)::pointer max = nullptr;
+	for (auto& action : actions) {
+		auto& [name, execute, get_features, score] = action;
+		float cost = 0;
+		/* Build feature set */
+		features.clear();
+		extract_game_state(features, pre);
+		get_features();
+		/* Calculate total cost of features */
+		for (const auto& [feature, value] : features) {
+			auto it = costs.find(feature);
 			if (it != costs.end()) {
-				cost += it->second;
+				cost += value * it->second;
 			} else {
-				cerr << " * Unknown feature: " << word << endl;
-				cost += -1000;
+				cerr << " * Unknown feature: " << feature << endl;
+				cost += -100;
 			}
 		}
-		if (cost > max_cost) {
-			max_cost = cost;
-			max_action = &action;
-			max_name = &name;
+		if (max == nullptr || cost > std::get<3>(*max)) {
+			max = &action;
 		}
 	}
 
-	if (max_action == nullptr) {
+	if (max == nullptr) {
 		throw std::runtime_error("No actions!");
 	}
+	const auto& [name, execute, get_features, max_score] = *max;
 
-	if (max_cost + game.turn() * 5 < -300 && game.gold() > 50) {
-		cerr << "No good action available (best=" << max_cost << "), skipping turn" << endl;
+	if (max_score + game.turn() * 5 < -300 && game.gold() > 50) {
+		cerr << "No good action available (best=" << max_score << "), skipping turn / buying random item" << endl;
 		/* Skipping doesn't work yet */
 		// game.skip_turn();
 		/* Attempt to buy a random item instead */
-		auto idx = uniform_int_distribution<size_t>(0, game.shop_items().size() - 1)(prng);
+		auto idx = move_gen(game.shop_items().size());
 		game.purchase_item(game.shop_items()[idx]);
 	} else {
-		cerr << "Action chosen: (" << max_cost << ") " << *max_name << endl;
-		max_action->operator()();
+		cerr << "Action chosen: (" << max_score << ") " << name << endl;
+
+		execute();
+
+		auto post = GameState(game);
+
+		auto diff = post - pre;
+
+		features.clear();
+		extract_game_state(features, pre);
+		get_features();
+		extract_game_diff_state(features, diff);
+
+		log_event(events, features);
 	}
 
-	return max_cost;
+	return max_score;
 
 }
 
-static void play_game(mugloar::Game& game, const unordered_map<string, float>& costs)
+static void play_game(mugloar::Game& game, const Costs& costs)
 {
-	while (!game.dead()) {
-		play_move(game, costs);
-		cerr << "Turn=" << game.turn() << ", Score=" << game.score() << ", Lives=" << game.lives() << ", Gold=" << game.gold() << endl;
+	MoveGen move_gen;
+	while (!stopping && !game.dead()) {
+		cerr << "Game=" << game.id() << ", Turn=" << game.turn() << ", Score=" << game.score() << ", Lives=" << game.lives() << ", Gold=" << game.gold() << endl;
+		play_move(game, costs, move_gen);
 	}
+}
+
+static void worker_task(int index, const mugloar::Api& api, const Costs& costs)
+{
+	do {
+
+		mugloar::Game game(api);
+
+		try {
+			play_game(game, costs);
+		} catch (std::runtime_error e) {
+			cerr << "Worker #" << index << ": error: " << e.what() << endl;
+			continue;
+		}
+
+		cerr << "ID=" << game.id() << ", score=" << game.score() << ", turns=" << game.turn() << endl;
+
+		{
+			scoped_lock lock(io_mutex);
+			scores << "id=" << game.id() << "\tscore=" << game.score() << "\tturn=" << game.turn() << "\t" << endl;
+		}
+
+	} while (!stopping);
 }
 
 static void help()
 {
 	cerr << "Arguments:" << endl;
 	cerr << "  -i input-filename" << endl;
+	cerr << "  -o output-filename" << endl;
+	cerr << "  -s score-filename" << endl;
+	cerr << "  -p worker-count" << endl;
 }
 
 int main(int argc, char *argv[])
 {
+	init_locale();
+
 	const char *infilename = nullptr;
 	const char *outfilename = nullptr;
-	char c;
+	const char *scorefilename = nullptr;
+	int worker_count = 20;
 	bool once = false;
-	while ((c = getopt(argc, argv, "hi:o:1")) != -1) {
+
+	char c;
+	while ((c = getopt(argc, argv, "hi:o:s:p:1")) != -1) {
 		switch (c) {
 		case 'h': help(); return 1;
 		case 'i': infilename = optarg; break;
 		case 'o': outfilename = optarg; break;
+		case 's': scorefilename = optarg; break;
+		case 'p': worker_count = std::stoi(optarg); break;
 		case '1': once = true; break;
 		case '?': help(); return 1;
 		}
 	}
 
-	if (!infilename || !outfilearg || optind != argc) {
+	if (!infilename || !outfilename || !scorefilename || worker_count <= 0 || optind != argc) {
 		help();
 		return 1;
 	}
@@ -234,30 +281,37 @@ int main(int argc, char *argv[])
 	const auto costs = read_costs(raw_data);
 
 	mugloar::Api api;
+	events = ofstream(outfilename, std::ios::binary | std::ios_base::app);
+	scores = ofstream(scorefilename, std::ios::binary | std::ios_base::app);
 
-	bool quit = false;
+	if (once) {
+		worker_task(0, api, costs);
+		return 0;
+	}
+
+	vector<thread> workers;
+	workers.reserve(worker_count);
+
+	cerr << "Starting " << worker_count << " workers..." << endl;
+
+	for (int i = 0; i < worker_count; i++) {
+		workers.emplace_back([&, i] () { worker_task(i, api, costs); });
+	}
+
+	cerr << "Started." << endl;
 
 	do {
+		cerr << "Press <q> <ENTER> to stop." << endl;
+	} while (getchar() != 'q');
 
-		cerr << "Game starting..." << endl;
+	stopping = true;
 
-		mugloar::Game game(api);
+	cerr << "Stopping..." << endl;
 
-		cerr << "Game started!" << endl << endl;
+	for (auto& worker : workers) {
+		worker.join();
+	}
 
-		play_game(game, costs);
-
-		cerr << "ID=" << game.id() << ", score=" << game.score() << ", turns=" << game.turn() << endl;
-
-		if (once) {
-			quit = true;
-		} else {
-			menu({
-				{ 'c', "Continue", [] () {} },
-				{ 'q', "Quit", [&] () { quit = true; } }
-			})();
-		}
-
-	} while (!quit);
+	cerr << "Stopped." << endl;
 
 }

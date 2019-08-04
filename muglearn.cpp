@@ -7,10 +7,8 @@
 
 #include <getopt.h>
 
+#include "Locale.hpp"
 #include "AnsiCodes.hpp"
-
-/* Zero-based index of first "optional feature" column */
-static constexpr size_t feature_col = 12;
 
 using std::string;
 using std::string_view;
@@ -52,9 +50,6 @@ struct Dataset
 	/* Mapping of tag strings to column indices in feature matrix */
 	unordered_map<string, size_t> tags;
 	unordered_map<size_t, string> tags_r;
-
-	/* Header entries */
-	vector<string> header;
 
 	/* Feature matrix size */
 	size_t cols = 0;
@@ -103,12 +98,10 @@ struct Dataset
 };
 
 /* Build the dataset from the string lists read from the input file */
-Dataset build_dataset(const vector<string>& header, const vector<vector<string>>& data)
+Dataset build_dataset(const vector<vector<string>>& data)
 {
 	cerr << "Building dataset..." << endl;
 	Dataset out;
-
-	out.header = header;
 
 	/* Assign each tag a unique number, used as column number to create the feature matrix */
 	out.tags.reserve(data.size() * 3);
@@ -116,9 +109,14 @@ Dataset build_dataset(const vector<string>& header, const vector<vector<string>>
 	out.tags_r.reserve(data.size() * 3);
 	out.tags_r.max_load_factor(10);
 	for (const auto& line : data) {
-		for (auto it = line.begin() + feature_col, end = line.end(); it != end; ++it) {
-			auto [tag, is_new] = out.tags.try_emplace(*it, out.tags.size() + feature_col);
+		if (line.size() & 1) {
+			cerr << "Line with odd-number of entries ignored" << endl;
+			continue;
+		}
+		for (auto it = line.begin(), end = line.end(); it != end; it += 2) {
+			auto [tag, is_new] = out.tags.try_emplace(*it, out.tags.size());
 			if (is_new) {
+				/* Add reverse mapping */
 				out.tags_r[tag->second] = tag->first;
 			}
 		}
@@ -127,7 +125,7 @@ Dataset build_dataset(const vector<string>& header, const vector<vector<string>>
 	/* Set matrix geometry */
 	cerr << "Tags: " << out.tags.size() << endl;
 	cerr << "Rows: " << data.size() << endl;
-	out.cols = out.tags.size() + feature_col;
+	out.cols = out.tags.size();
 	out.rows = data.size();
 	out.data.resize(out.cols * out.rows);
 	std::fill(out.data.begin(), out.data.end(), 0.0f);
@@ -135,16 +133,12 @@ Dataset build_dataset(const vector<string>& header, const vector<vector<string>>
 	/* Build the feature matrix */
 	size_t row = 0;
 	for (const auto& line : data) {
-		size_t col = 0;
-		for (const auto& field : line) {
-			if (col < feature_col) {
-				/* Copy value verbatim */
-				out(row, col) = std::stod(field);
-			} else {
-				/* Lookup tag's column and set to 1 */
-				out(row, out.tags[field]) = 1;
-			}
-			++col;
+		if (line.size() & 1) {
+			continue;
+		}
+		for (auto it = line.begin(), end = line.end(); it != end; it += 2) {
+			/* Lookup tag's column and set value */
+			out(row, out.tags[*it]) = std::stof(it[1]);
 		}
 		++row;
 	}
@@ -152,13 +146,12 @@ Dataset build_dataset(const vector<string>& header, const vector<vector<string>>
 }
 
 /* Read the file line-by-line, splitting each column by tab-terminator */
-static pair<vector<string>, vector<vector<string>>> read_file(const string& in)
+static vector<vector<string>> read_file(const string& in)
 {
 	cerr << "Reading file " << in << "..." << endl;
 	ifstream f(in);
-	vector<string> header;
 	vector<vector<string>> data;
-	data.reserve(10000);
+	data.reserve(100000);
 	/* Read file line-by-line */
 	string line;
 	while (getline(f, line)) {
@@ -166,23 +159,13 @@ static pair<vector<string>, vector<vector<string>>> read_file(const string& in)
 		string_view::size_type end;
 		/* Split line into fields by tab-terminator */
 		auto& fields = data.emplace_back();
-		fields.reserve(50);
+		fields.reserve(1000);
 		while ((end = sv.find('\t')) != string_view::npos) {
 			fields.push_back(string(sv.substr(0, end)));
 			sv.remove_prefix(end + 1);
 		}
-		/* If first token is not numeric, drop row (header rows) */
-		try {
-			std::stod(fields[0]);
-		} catch (std::invalid_argument e) {
-			auto last = data.end() - 1;
-			if (header.empty()) {
-				header = std::move(*last);
-			}
-			data.erase(last);
-		}
 	}
-	return { std::move(header), std::move(data) };
+	return data;
 }
 
 static vector<float> calc_row_costs(const Dataset& dataset)
@@ -209,26 +192,13 @@ static vector<pair<float, size_t>> calc_feature_costs(const Dataset& dataset, co
 	std::fill(feature_cost.begin(), feature_cost.end(), make_pair(0.0f, size_t(0)));
 
 	for (size_t row = 0; row < dataset.rows; ++row) {
-		/* Calculate number of non-zero "presence" entries in this row */
-		size_t nonzero = 0;
-		for (size_t col = feature_col; col < dataset.cols; ++col) {
-			const auto& input = dataset(row, col);
-			if (input != 0) {
-				nonzero++;
-			}
-		}
 		/* Accumulate cost per-feature */
-		for (size_t col = 0; col < dataset.cols && nonzero > 0; ++col) {
+		for (size_t col = 0; col < dataset.cols; ++col) {
 			auto& [total_cost, samples] = feature_cost[col];
 			const auto& cost = row_cost[row];
 			const auto& input = dataset(row, col);
 			if (input != 0) {
-				if (col < feature_col) {
-					total_cost += cost * input;
-				} else {
-					/* Scale boolean feature cost by number of boolean features */
-					total_cost += cost * input / nonzero;
-				}
+				total_cost += cost * input;
 				samples++;
 			}
 		}
@@ -250,7 +220,7 @@ static void save_result(const Dataset& dataset, const vector<pair<float, size_t>
 	ofstream f(filename);
 
 	for (size_t col = 0; col < dataset.cols; ++col) {
-		const auto& header = col < feature_col ? dataset.header[col] : dataset.tags_r.at(col);
+		const auto& header = dataset.tags_r.at(col);
 		const auto& [value, samples] = feature_cost[col];
 		f << value << "\t" << samples << "\t" << header << "\t" << endl;
 	}
@@ -265,6 +235,8 @@ static void help()
 
 int main(int argc, char *argv[])
 {
+	init_locale();
+
 	const char *infilename = nullptr;
 	const char *outfilename = nullptr;
 	char c;
@@ -282,9 +254,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	const auto [header, cells] = read_file(infilename);
+	const auto cells = read_file(infilename);
 
-	const auto dataset = build_dataset(header, cells);
+	const auto dataset = build_dataset(cells);
 
 	const auto row_cost = calc_row_costs(dataset);
 

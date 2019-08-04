@@ -101,7 +101,7 @@ struct Message
 	 * Undocumented:
 	 * encrypted (number, nullable)
 	 */
-	bool encoded;
+	Format cipher;
 };
 
 /* Item in shop or in our rucksack */

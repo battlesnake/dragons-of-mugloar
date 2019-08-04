@@ -8,19 +8,18 @@
 #include <string>
 #include <tuple>
 #include <functional>
+#include <unordered_map>
 
 #include <fcntl.h>
 #include <unistd.h>
 
 #include <getopt.h>
 
-#include <unicode/unistr.h>
-#include <unicode/ustream.h>
-#include <unicode/locid.h>
-
+#include "Locale.hpp"
 #include "Game.hpp"
 #include "CollectState.hpp"
 #include "CollectActionFeatures.hpp"
+#include "LogEvent.hpp"
 
 using std::thread;
 using std::atomic;
@@ -34,84 +33,16 @@ using std::uniform_int_distribution;
 using std::mutex;
 using std::scoped_lock;
 using std::ofstream;
+using std::unordered_map;
 using std::cout;
 using std::cerr;
 using std::endl;
 using std::get;
-using mugloar::Number;
-using mugloar::Api;
-using mugloar::Game;
-using mugcollect::State;
-using mugcollect::ActionFeatures;
+using namespace mugloar;
 
 static ofstream outfile;
 
 static atomic<bool> stopping{false};
-
-using LogEntry = pair<ActionFeatures, State>;
-
-/* Convert string to lowercase, assuming UTF-8 encoding */
-static string lowercase(const string& in)
-{
-	icu::UnicodeString us(in.c_str(), "UTF-8");
-	us = us.toLower();
-	string out;
-	us.toUTF8String(out);
-	return out;
-}
-
-static void dump_log_header()
-{
-	static const vector<string> cols = {
-		"delta_dead",
-		"delta_lives",
-		"delta_score",
-		"delta_people_rep",
-		"delta_state_rep",
-		"delta_underworld_rep",
-
-		"dead",
-		"lives",
-		"score",
-		"people_rep",
-		"state_rep",
-		"underworld_rep",
-
-		"action_features",
-	};
-	for (const auto& col : cols) {
-		outfile << col << "\t";
-	}
-	outfile << endl;
-}
-
-static void dump_log(const State& pre, const State& post, const ActionFeatures& af)
-{
-	static size_t count = 0;
-	static mutex buffer_dump_mx;
-	scoped_lock lock(buffer_dump_mx);
-	auto dump_v = [] (const auto& v) {
-		outfile << get<0>(v) << "\t"
-				<< get<1>(v) << "\t"
-				<< get<2>(v) << "\t"
-				<< get<3>(v) << "\t"
-				<< get<4>(v) << "\t"
-				<< get<5>(v) << "\t";
-	};
-	/* Knowledge gained from action */
-	dump_v((post - pre).vector);
-	/* Knowledge available before action (including knowledge about action) */
-	dump_v(pre.vector);
-	for (const auto& w : af.words) {
-		outfile << lowercase(w) << "\t";
-	}
-	/* End of entry */
-	outfile << endl;
-	++count;
-	if (count % 100 == 0) {
-		cerr << "Logged " << count << " entries" << endl;
-	}
-}
 
 /* One worker (automated player) */
 static void worker_task(size_t worker_id, const Api& api)
@@ -119,7 +50,7 @@ static void worker_task(size_t worker_id, const Api& api)
 	random_device rd;
 	mt19937 prng(rd());
 
-	vector<pair<function<void()>, function<ActionFeatures()>>> actions;
+	vector<pair<function<void()>, function<void()>>> actions;
 	actions.reserve(100);
 
 	while (!stopping) {
@@ -128,38 +59,29 @@ static void worker_task(size_t worker_id, const Api& api)
 		Game game(api);
 
 		/* Initialise pre-action state to current state */
-		State pre(game);
+		GameState pre(game);
 
 		/* Post-action state set here doesn't matter */
-		State post(pre);
+		GameState post;
 
 		while (!stopping && !game.dead()) {
 
 			/* Build list of possible actions and action features */
 			actions.clear();
 
+			unordered_map<string, float> features;
+
 			for (const auto& msg : game.messages()) {
 				actions.push_back({
 					[&] () { game.solve_message(msg); },
-					[&] () {
-						vector<string> other;
-						if (msg.encoded) {
-							other.emplace_back("encoded");
-						}
-						other.emplace_back(msg.probability);
-						return ActionFeatures("SOLVE", msg.message, other);
-					}
+					[&] () { extract_action_features(features, msg); }
 					});
 			}
 
 			for (const auto& item : game.shop_items()) {
 				actions.push_back({
 					[&] () { game.purchase_item(item); },
-					[&] () {
-						vector<string> other;
-						other.emplace_back(item.id);
-						return ActionFeatures("BUY", item.name, other);
-					}
+					[&] () { extract_action_features(features, item); }
 					});
 			}
 
@@ -167,7 +89,7 @@ static void worker_task(size_t worker_id, const Api& api)
 			const auto& [action, get_features] = actions[action_idx];
 
 			/* Get action features */
-			auto features = get_features();
+			get_features();
 
 			/* Execute action */
 			try {
@@ -178,10 +100,15 @@ static void worker_task(size_t worker_id, const Api& api)
 			}
 
 			/* Calculate post-action state */
-			post = State(game);
+			post = GameState(game);
+
+			auto diff = post - pre;
+
+			extract_game_state(features, pre);
+			extract_game_diff_state(features, diff);
 
 			/* Emit action features and state change */
-			dump_log(pre, post, features);
+			log_event(outfile, features);
 
 			/* This post-action state is the next iteration's pre-action state */
 			pre = post;
@@ -200,6 +127,8 @@ static void help()
 
 int main(int argc, char *argv[])
 {
+	init_locale();
+
 	char c;
 	int worker_count = 4;
 	const char *outfilename = nullptr;
@@ -225,8 +154,6 @@ int main(int argc, char *argv[])
 	workers.reserve(worker_count);
 
 	cerr << "Starting " << worker_count << " workers..." << endl;
-
-	dump_log_header();
 
 	for (int i = 0; i < worker_count; ++i) {
 		workers.emplace_back(worker_task, i, api);

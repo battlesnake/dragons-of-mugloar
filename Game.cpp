@@ -54,7 +54,7 @@ void Game::update_messages()
 			reward,
 			expires_in,
 			probability,
-			format != PLAIN
+			format
 			});
 	});
 }

@@ -1,11 +1,27 @@
+#include <unicode/unistr.h>
+#include <unicode/ustream.h>
+#include <unicode/locid.h>
+
 #include "CollectActionFeatures.hpp"
 
 using std::string;
 using std::string_view;
 using std::vector;
+using std::unordered_map;
+using std::to_string;
 
 /* Helper functions for decomposing text strings to words */
 namespace detail {
+
+/* Convert string to lowercase, assuming UTF-8 encoding */
+static string lowercase(const string& in)
+{
+	icu::UnicodeString us(in.c_str(), "UTF-8");
+	us = us.toLower();
+	string out;
+	us.toUTF8String(out);
+	return out;
+}
 
 /* Emit ordered list of words found in string */
 static void words_of(vector<string_view>& res, const string_view& sv)
@@ -51,24 +67,36 @@ static void word_pairs_of(vector<string_view>& res, const string_view& sv)
 }
 
 
-namespace mugcollect {
+namespace mugloar {
 
-ActionFeatures::ActionFeatures(const string& type, const string& name, const std::vector<string>& other)
+void extract_action_features(unordered_map<string, float>& features, const string& type, const string& description)
 {
 	vector<string_view> name_words;
-	words.reserve(100);
-	detail::words_of(name_words, name);
-	detail::word_pairs_of(name_words, name);
+	name_words.reserve(10000);
+	detail::words_of(name_words, description);
+	detail::word_pairs_of(name_words, description);
 
-	words.emplace(type);
+	features["action:" + type] = 1;
 
 	for (const auto& w : name_words) {
-		words.emplace(std::string(w));
+		features[detail::lowercase(string(w))] = 1;
 	}
+}
 
-	for (auto& w : other) {
-		words.emplace(std::move(w));
+void extract_action_features(unordered_map<string, float>& features, const Message& message)
+{
+	extract_action_features(features, "solve", message.message);
+	if (message.cipher == PLAIN) {
+		features["cipher:none"] = 1;
+	} else {
+		features["cipher:" + to_string(int(message.cipher))] = 1;
 	}
+	features["probability:" + detail::lowercase(message.probability)] = 1;
+}
+
+void extract_action_features(unordered_map<string, float>& features, const Item& item)
+{
+	extract_action_features(features, "buy", item.name);
 }
 
 }

@@ -3,6 +3,7 @@
 
 #include <getopt.h>
 
+#include "Locale.hpp"
 #include "Menu.hpp"
 #include "AnsiCodes.hpp"
 #include "Game.hpp"
@@ -19,6 +20,8 @@ static void help()
 
 int main(int argc, char *argv[])
 {
+	init_locale();
+
 	char c;
 	while ((c = getopt(argc, argv, "h")) != -1) {
 		switch (c) {
