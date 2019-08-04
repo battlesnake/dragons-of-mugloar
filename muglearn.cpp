@@ -22,34 +22,19 @@ using std::cerr;
 using std::endl;
 using std::getline;
 
-/*
- * Calculate cost of operation based on changes.
- *
- * This controls how we prioritise different objectives (score, lives, etc).
- */
-static float costfunction(const vector<float>::const_iterator& v)
-{
-	float cost = 0;
-	/* Death = huge loss */
-	cost += v[0] * -3000;
-	/* Each life = moderate value */
-	cost += v[1] > 0 ? v[1] * 100 : v[1] * 1000;
-	/* Score = 1 per point */
-	cost += v[2];
-	/* Reputation = 100 per point */
-	cost += v[3] * 100;
-	cost += v[4] * 100;
-	cost += v[5] * 100;
-
-	return cost;
-}
-
 /* Structure to hold training data */
 struct Dataset
 {
 	/* Mapping of tag strings to column indices in feature matrix */
 	unordered_map<string, size_t> tags;
 	unordered_map<size_t, string> tags_r;
+
+	size_t score_tag;
+	size_t lives_tag;
+	size_t gold_tag;
+	size_t rep_people_tag;
+	size_t rep_state_tag;
+	size_t rep_underworld_tag;
 
 	/* Feature matrix size */
 	size_t cols = 0;
@@ -97,6 +82,26 @@ struct Dataset
 
 };
 
+/*
+ * Calculate cost of operation based on changes.
+ *
+ * This controls how we prioritise different objectives (score, lives, etc).
+ */
+static float costfunction(const Dataset& ds, const vector<float>::const_iterator& v)
+{
+	float cost = 0;
+	/* Each life = moderate value (gain), high value (loss) */
+	cost += v[ds.lives_tag] > 0 ? v[ds.lives_tag] * 30 : v[ds.lives_tag] * 150;
+	/* Score = 0.1 per point */
+	cost += v[ds.score_tag] * 0.1f;
+	/* Reputation = 10 per point */
+	cost += v[ds.rep_people_tag] * 10;
+	cost += v[ds.rep_state_tag] * 10;
+	cost += v[ds.rep_underworld_tag] * 10;
+
+	return cost;
+}
+
 /* Build the dataset from the string lists read from the input file */
 Dataset build_dataset(const vector<vector<string>>& data)
 {
@@ -121,6 +126,13 @@ Dataset build_dataset(const vector<vector<string>>& data)
 			}
 		}
 	}
+
+	out.score_tag = out.tags["diff:score"];
+	out.lives_tag = out.tags["diff:lives"];
+	out.gold_tag = out.tags["diff:gold"];
+	out.rep_people_tag = out.tags["diff:rep_people"];
+	out.rep_state_tag = out.tags["diff:rep_state"];
+	out.rep_underworld_tag = out.tags["diff:rep_underworld"];
 
 	/* Set matrix geometry */
 	cerr << "Tags: " << out.tags.size() << endl;
@@ -170,14 +182,14 @@ static vector<vector<string>> read_file(const string& in)
 
 static vector<float> calc_row_costs(const Dataset& dataset)
 {
-	cerr << "Calculating costs for each action..." << endl;
+	cerr << "Calculating costs for each event..." << endl;
 
 	vector<float> row_cost;
 
 	row_cost.resize(dataset.rows);
 
 	for (size_t row = 0; row < dataset.rows; ++row) {
-		row_cost[row] = costfunction(dataset.row_begin(row));
+		row_cost[row] = costfunction(dataset, dataset.row_begin(row));
 	}
 
 	return row_cost;

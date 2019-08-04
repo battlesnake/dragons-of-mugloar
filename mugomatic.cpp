@@ -8,7 +8,6 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
-#include <random>
 
 #include <getopt.h>
 
@@ -34,9 +33,6 @@ using std::function;
 using std::to_string;
 using std::cerr;
 using std::endl;
-using std::random_device;
-using std::mt19937;
-using std::uniform_int_distribution;
 using std::atomic;
 using std::thread;
 using std::mutex;
@@ -90,23 +86,7 @@ static unordered_map<string, float> read_costs(const vector<vector<string>>& dat
 	return costs;
 }
 
-struct MoveGen
-{
-	mt19937 prng;
-
-	MoveGen()
-	{
-		random_device rd;
-		prng = mt19937(rd());
-	}
-
-	size_t operator () (size_t count)
-	{
-		return uniform_int_distribution<size_t>(0, count - 1)(prng);
-	}
-};
-
-static float play_move(mugloar::Game& game, const unordered_map<string, float>& costs, MoveGen& move_gen)
+static float play_move(mugloar::Game& game, const unordered_map<string, float>& costs)
 {
 	/* Build list of possible actions and action features */
 	vector<tuple<string, function<void()>, function<void()>, float>> actions;
@@ -154,7 +134,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 	typename decltype(actions)::pointer max = nullptr;
 	for (auto& action : actions) {
 		auto& [name, execute, get_features, score] = action;
-		float cost = 0;
+		score = 0;
 		/* Build feature set */
 		features.clear();
 		extract_game_state(features, pre);
@@ -163,13 +143,13 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 		for (const auto& [feature, value] : features) {
 			auto it = costs.find(feature);
 			if (it != costs.end()) {
-				cost += value * it->second;
+				score += value * it->second;
 			} else {
 				cerr << " * Unknown feature: " << feature << endl;
-				cost += -100;
+				score += -100;
 			}
 		}
-		if (max == nullptr || cost > std::get<3>(*max)) {
+		if (max == nullptr || score > std::get<3>(*max)) {
 			max = &action;
 		}
 	}
@@ -179,29 +159,20 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 	}
 	const auto& [name, execute, get_features, max_score] = *max;
 
-	if (max_score + game.turn() * 5 < -300 && game.gold() > 50) {
-		cerr << "No good action available (best=" << max_score << "), skipping turn / buying random item" << endl;
-		/* Skipping doesn't work yet */
-		// game.skip_turn();
-		/* Attempt to buy a random item instead */
-		auto idx = move_gen(game.shop_items().size());
-		game.purchase_item(game.shop_items()[idx]);
-	} else {
-		cerr << "Action chosen: (" << max_score << ") " << name << endl;
+	cerr << "Action chosen: (" << max_score << ") " << name << endl;
 
-		execute();
+	execute();
 
-		auto post = GameState(game);
+	auto post = GameState(game);
 
-		auto diff = post - pre;
+	auto diff = post - pre;
 
-		features.clear();
-		extract_game_state(features, pre);
-		get_features();
-		extract_game_diff_state(features, diff);
+	features.clear();
+	extract_game_state(features, pre);
+	get_features();
+	extract_game_diff_state(features, diff);
 
-		log_event(events, features);
-	}
+	log_event(events, features);
 
 	return max_score;
 
@@ -209,10 +180,9 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 
 static void play_game(mugloar::Game& game, const Costs& costs)
 {
-	MoveGen move_gen;
 	while (!stopping && !game.dead()) {
 		cerr << "Game=" << game.id() << ", Turn=" << game.turn() << ", Score=" << game.score() << ", Lives=" << game.lives() << ", Gold=" << game.gold() << endl;
-		play_move(game, costs, move_gen);
+		play_move(game, costs);
 	}
 }
 
