@@ -26,6 +26,7 @@ struct GameStateDiff
 	Number score;
 	Number lives;
 	Number gold;
+	Number level;
 	Number rep_people;
 	Number rep_state;
 	Number rep_underworld;
@@ -36,6 +37,7 @@ struct GameState
 	Number score;
 	Number lives;
 	Number gold;
+	Number level;
 	Number rep_people;
 	Number rep_state;
 	Number rep_underworld;
