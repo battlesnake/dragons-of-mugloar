@@ -46,7 +46,7 @@ function main {
 		build) run make -j"$cpus" O="${O:-2}";;
 		collect) run ./mugcollect -o training.dat -p 100;;
 		learn) run ./muglearn -i training.dat -o feature_score.dat;;
-		play) run ./mugomatic -i feature_score.dat -o training.dat -s scores.dat -p 100;;
+		play) run ./mugomatic -i feature_score.dat -o training.dat -s scores.dat -p 20;;
 		help) show_help;;
 		*) show_help; exit 1;;
 		esac
