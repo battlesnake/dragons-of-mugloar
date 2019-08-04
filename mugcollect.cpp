@@ -17,8 +17,7 @@
 
 #include "Locale.hpp"
 #include "Game.hpp"
-#include "CollectState.hpp"
-#include "CollectActionFeatures.hpp"
+#include "ExtractFeatures.hpp"
 #include "LogEvent.hpp"
 
 using std::thread;
