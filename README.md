@@ -34,6 +34,12 @@ Requires for running:
  * Linux environment (might also work on OSX)
 
 
+To prepare:
+
+	# Downloads nested dependency repos
+	git submodule update --init
+
+
 To build:
 
     make -j
@@ -53,6 +59,7 @@ To collect training data for the AI player, using 20 workers:
 To train the artificial intelligence using the previously-collected data:
 
 	# This uses a dumb linear model and manually-weighted costfunction
+	# This also uses insane amounts of RAM.  I run it on a 64GB cloud server.
 	./muglearn -i training.dat -o feature_score.dat
 
 
@@ -124,3 +131,6 @@ It also will not be able to learn that buying some item can increase the chance 
 This could be determined from the training data fairly easily, but the AI won't learn to actually buy the item to provide long-term gains - only to increase the instantaneous cost.
 
 Due to the time required to implement this approach, and the questionable quality of the return, I decided to abort this approach and go for a 1980s-style deterministic model instead.
+
+The issues with a simple feedforward neural network not being able to learn the value of long-term strategic actions (e.g. buying certain items) could be fixed by using an LSTM architecture (long short-term memory).
+I believe that this is quite a common solution to the strategy/tactics issue for deep-learning approaches, but I haven't used an LSTM directly before.
