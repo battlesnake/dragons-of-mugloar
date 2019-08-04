@@ -11,14 +11,11 @@
 
 #include <getopt.h>
 
-#include <unicode/unistr.h>
-#include <unicode/ustream.h>
-#include <unicode/locid.h>
-
 #include "Locale.hpp"
 #include "Game.hpp"
 #include "ExtractFeatures.hpp"
 #include "LogEvent.hpp"
+#include "AnsiCodes.hpp"
 
 using std::string;
 using std::string_view;
@@ -131,6 +128,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 	auto pre = GameState(game);
 
 	typename decltype(actions)::pointer max = nullptr;
+	bool unknown = false;
 	for (auto& action : actions) {
 		auto& [name, execute, get_features, score] = action;
 		score = 0;
@@ -139,7 +137,6 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 		extract_game_state(features, pre);
 		get_features();
 		/* Calculate total cost of features */
-		bool unknown = false;
 		for (const auto& [feature, value] : features) {
 			auto it = costs.find(feature);
 			if (it != costs.end()) {
@@ -153,12 +150,12 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 				score += -100;
 			}
 		}
-		if (unknown) {
-			cerr << endl;
-		}
 		if (max == nullptr || score > std::get<3>(*max)) {
 			max = &action;
 		}
+	}
+	if (unknown) {
+		cerr << endl;
 	}
 
 	if (max == nullptr) {
@@ -166,7 +163,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 	}
 	const auto& [name, execute, get_features, max_score] = *max;
 
-	cerr << "Action chosen: (" << max_score << ") " << name << endl;
+	cerr << Strong(Magenta("Action chosen:")) << " cost=" << Emph(max_score) << " name=" << Emph(name) << endl;
 
 	execute();
 
@@ -188,7 +185,12 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 static void play_game(mugloar::Game& game, const Costs& costs)
 {
 	while (!stopping && !game.dead()) {
-		cerr << "Game=" << game.id() << ", Turn=" << game.turn() << ", Score=" << game.score() << ", Lives=" << game.lives() << ", Gold=" << game.gold() << endl;
+		cerr << Strong("Game=") << Emph(Cyan(game.id()))
+			<< Strong(", Turn=") << Emph(int(game.turn()))
+			<< Strong(", Score=") << Green(Strong(Emph(int(game.score()))))
+			<< Strong(", Lives=") << Red(Strong(Emph(int(game.lives()))))
+			<< Strong(", Gold=") << Yellow(Strong(Emph(int(game.gold()))))
+			<< endl;
 		play_move(game, costs);
 	}
 }
