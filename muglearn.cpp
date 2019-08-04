@@ -137,6 +137,7 @@ Dataset build_dataset(const vector<vector<string>>& data)
 	/* Set matrix geometry */
 	cerr << "Tags: " << out.tags.size() << endl;
 	cerr << "Rows: " << data.size() << endl;
+	cerr << "Size: " << (out.tags.size() * data.size() * 4 / 1048576) << " MB" << endl;
 	out.cols = out.tags.size();
 	out.rows = data.size();
 	out.data.resize(out.cols * out.rows);
