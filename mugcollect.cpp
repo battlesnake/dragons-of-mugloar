@@ -19,6 +19,7 @@
 #include "Game.hpp"
 #include "ExtractFeatures.hpp"
 #include "LogEvent.hpp"
+#include "Parallel.hpp"
 
 using std::thread;
 using std::atomic;
@@ -39,9 +40,8 @@ using std::endl;
 using std::get;
 using namespace mugloar;
 
+/* Output file for event log */
 static ofstream outfile;
-
-static atomic<bool> stopping{false};
 
 /* One worker (automated player) */
 static void worker_task(size_t worker_id, const Api& api)
@@ -66,6 +66,7 @@ static void worker_task(size_t worker_id, const Api& api)
 		while (!stopping && !game.dead()) {
 
 			/* Build list of possible actions and action features */
+
 			actions.clear();
 
 			unordered_map<string, float> features;
@@ -145,32 +146,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	/* Open output file */
 	outfile = ofstream(outfilename, std::ios::binary | std::ios_base::app);
 
+	/* API binding */
 	Api api;
 
-	vector<thread> workers;
-	workers.reserve(worker_count);
+	/* Start workers */
+	run_parallel(worker_count, [&] (int i) { worker_task(i, api); });
 
-	cerr << "Starting " << worker_count << " workers..." << endl;
-
-	for (int i = 0; i < worker_count; ++i) {
-		workers.emplace_back(worker_task, i, api);
-	}
-
-	cerr << "Started." << endl;
-
-	do {
-		cerr << "Press <q> <ENTER> to stop." << endl;
-	} while (getchar() != 'q');
-
-	stopping = true;
-
-	cerr << "Stopping..." << endl;
-
-	for (auto& worker : workers) {
-		worker.join();
-	}
-
-	cerr << "Stopped." << endl;
 }

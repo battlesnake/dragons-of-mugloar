@@ -4,7 +4,8 @@
 
 #include "Menu.hpp"
 
-MenuAction menu(const Menu& items)
+/* Display single-choice menu and request choice from user */
+const MenuAction& menu(const Menu& items)
 {
 	using std::cerr;
 	using std::endl;

@@ -49,6 +49,8 @@ int main(int argc, char *argv[])
 
 		while (!game.dead()) {
 
+			/* Print current status */
+
 			cout << endl;
 			cout << Strong(Blue(std::string(40, '='))) << endl;
 			cout << Strong("Turn: #") << game.turn() << endl;
@@ -66,6 +68,8 @@ int main(int argc, char *argv[])
 			cout << endl;
 
 			char id = 'a';
+
+			/* Build options menu */
 			Menu options;
 
 			cout << Strong("Messages:") << endl;
@@ -93,10 +97,13 @@ int main(int argc, char *argv[])
 			}
 			cout << endl;
 
+			/* Request choice from user and execute */
+
 			menu(options)();
 
 		}
 
+		/* Play again? */
 		menu({
 			{ 'c', "Continue", [] () {} },
 			{ 'q', "Quit", [&] () { quit = true; } }

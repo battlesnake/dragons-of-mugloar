@@ -61,12 +61,18 @@ namespace mugloar
 void extract_action_features(unordered_map<string, float>& features, const string& type, const string& description)
 {
 	vector<string_view> name_words;
-	name_words.reserve(10000);
+	name_words.reserve(1000);
+
+	/* Get words from description */
 	detail::words_of(name_words, description);
+
+	/* Get word pairs from description */
 	detail::word_pairs_of(name_words, description);
 
+	/* Action type */
 	features["action:" + type] = 1;
 
+	/* Build feature set */
 	for (const auto& w : name_words) {
 		features[lowercase(string(w))] = 1;
 	}
@@ -75,11 +81,15 @@ void extract_action_features(unordered_map<string, float>& features, const strin
 void extract_action_features(unordered_map<string, float>& features, const Message& message)
 {
 	extract_action_features(features, "solve", message.message);
+
+	/* Cipher type */
 	if (message.cipher == PLAIN) {
 		features["cipher:none"] = 1;
 	} else {
 		features["cipher:" + to_string(int(message.cipher))] = 1;
 	}
+
+	/* Probability */
 	features["probability:" + lowercase(message.probability)] = 1;
 }
 
@@ -100,6 +110,7 @@ void extract_game_state(std::unordered_map<std::string, float>& features, const 
 	for (const auto& [name, count] : state.items) {
 		features["item:" + name] = count;
 	}
+	/* Boolean features for specific values */
 	features["lives:" + to_string(int(state.lives))] = 1;
 	features["level:" + to_string(int(state.level))] = 1;
 	features["gold:50min=" + to_string(int(state.gold / 50) * 50)] = 1;

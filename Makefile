@@ -10,6 +10,7 @@ obj := \
 	ExtractFeatures.oxx \
 	LogEvent.oxx \
 	LowerCase.oxx \
+	Parallel.oxx \
 	b64dec.oxx rot13dec.oxx \
 	$(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
 

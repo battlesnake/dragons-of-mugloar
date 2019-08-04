@@ -8,4 +8,5 @@ using MenuAction = std::function<void()>;
 using MenuItem = std::tuple<char, std::string, MenuAction>;
 using Menu = std::vector<MenuItem>;
 
-MenuAction menu(const Menu& items);
+/* Display a menu of choices and ask user to choose one */
+const MenuAction& menu(const Menu& items);

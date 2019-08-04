@@ -5,7 +5,16 @@
 namespace mugloar
 {
 
-/* DANGER!  No validation!!  TODO: fix */
+/*
+ * BUG:
+ *
+ * DANGER!
+ * No validation!!
+ *
+ * Crap in, crap out (or possibly a crash).
+ *
+ * TODO: fix
+ */
 std::string b64dec(const std::string& in)
 {
 	std::string out;

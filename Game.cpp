@@ -1,5 +1,4 @@
 #include <vector>
-#include <thread>
 #include <functional>
 #include <stdexcept>
 
@@ -39,6 +38,7 @@ static std::vector<string> prob_map {
 	{ "impossible" },
 };
 
+/* String to enum */
 Probability lookup_probability(std::string name)
 {
 	name = lowercase(name);
@@ -51,6 +51,7 @@ Probability lookup_probability(std::string name)
 	throw std::runtime_error("Invalid probability: " + name);
 }
 
+/* Enum to string */
 const std::string& reverse_lookup_probability(Probability p)
 {
 	if (p >= 0 && p < prob_map.size()) {

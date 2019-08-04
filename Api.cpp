@@ -22,27 +22,33 @@ using std::printf;
 
 namespace mugloar {
 
+/* Set this envvar to have the API dump debugging data */
 static bool debug_api = getenv("DEBUG_API") != nullptr;
 
+/* Supported HTTP methods */
 enum Method {
 	GET,
 	POST
 };
 
+/* Executes a HTTP request, returns a JSON document from the response */
 static void execute_request(Method method, const string& base, const string& path, rapidjson::Document& response)
 {
 	if (debug_api) {
 		cerr << (method == GET ? "GET" : "POST") << " \t" << "... " << path << endl;
 	}
 
+	/* Construct full URL */
 	cpr::Url url = base + path;
 
+	/* Execute request */
 	auto r = method == GET ? cpr::Get(url) : cpr::Post(url);
 
 	if (debug_api) {
 		cerr << "Status: " << r.status_code << endl;
 	}
 
+	/* Process response */
 	if (r.status_code == 400) {
 		rapidjson::Document err;
 		err.Parse(r.text.c_str());
@@ -97,7 +103,7 @@ void Api::get_messages(const GameId& game_id, function<void(AdId, String, Number
 {
 	rapidjson::Document response;
 	execute_request(GET, base, "/" + game_id + "/messages", response);
-	/* BUG: API defines root as object with "messages" array-member but example has the array as root */
+	/* NONCOMPLIANCE: API defines root as object with "messages" array-member but example has the array as root */
 	for (const auto& msg : response.GetArray()) {
 		Format format = PLAIN;
 		if (msg.HasMember("encrypted")) {
@@ -126,10 +132,13 @@ void Api::get_messages(const GameId& game_id, function<void(AdId, String, Number
 			}
 		}
 		/*
-		 * "Encrypted" field is null/1.
-		 * Non-null indicates that the text fields are base64 encoded.
+		 * NONCOMPLIANCE: undocumented fields
 		 *
-		 * This includes the also-undocumented "probability" fields.
+		 * "Encrypted" field is null/number.
+		 * The number value indicates the cipher type.
+		 *
+		 * The also-undocumented "probability" field appears to be a
+		 * string-representation of an enum.
 		 */
 		consume_message(
 			msg["adId"].GetString(),
@@ -160,7 +169,7 @@ void Api::shop_list_items(const GameId& game_id, function<void(ItemId, String, N
 {
 	rapidjson::Document response;
 	execute_request(GET, base, "/" + game_id + "/shop", response);
-	/* BUG: API defines root as object with "items" array-member but example has the array as root */
+	/* NONCOMPLIANCE: API defines root as object with "items" array-member but example has the array as root */
 	for (const auto& item : response.GetArray()) {
 		consume_item(
 			item["id"].GetString(),
@@ -174,7 +183,7 @@ void Api::shop_buy_item(const GameId& game_id, const ItemId& item_id, bool& succ
 {
 	rapidjson::Document response;
 	execute_request(POST, base, "/" + game_id + "/shop/buy/" + item_id, response);
-	/* BUG: API defines this as a string, but example is boolean */
+	/* NONCOMPLIANCE: API defines this as a string, but example is boolean */
 	success = response["shoppingSuccess"].GetBool();
 	gold = response["gold"].GetInt64();
 	lives = response["lives"].GetInt64();

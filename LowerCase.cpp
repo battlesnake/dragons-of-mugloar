@@ -6,6 +6,7 @@
 
 using std::string;
 
+/* Unicode-aware conversion to lowercase */
 string lowercase(const string& in)
 {
 	icu::UnicodeString us(in.c_str(), "UTF-8");

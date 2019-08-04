@@ -127,6 +127,7 @@ Dataset build_dataset(const vector<vector<string>>& data)
 		}
 	}
 
+	/* Lookup and cache column numbers for specific features */
 	out.score_tag = out.tags["diff:score"];
 	out.lives_tag = out.tags["diff:lives"];
 	out.gold_tag = out.tags["diff:gold"];
@@ -165,6 +166,7 @@ static vector<vector<string>> read_file(const string& in)
 	ifstream f(in);
 	vector<vector<string>> data;
 	data.reserve(100000);
+
 	/* Read file line-by-line */
 	string line;
 	while (getline(f, line)) {

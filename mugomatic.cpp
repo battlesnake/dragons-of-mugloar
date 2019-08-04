@@ -1,6 +1,5 @@
 #include <atomic>
 #include <mutex>
-#include <thread>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -17,6 +16,7 @@
 #include "ExtractFeatures.hpp"
 #include "LogEvent.hpp"
 #include "AnsiCodes.hpp"
+#include "Parallel.hpp"
 
 using std::string;
 using std::string_view;
@@ -34,19 +34,18 @@ using std::cerr;
 using std::endl;
 using std::flush;
 using std::atomic;
-using std::thread;
 using std::mutex;
 using std::scoped_lock;
 using namespace mugloar;
 
 using Costs = unordered_map<string, float>;
 
+/* For synchronising IO to files and STDERR */
 static mutex io_mutex;
 
+/* Output files */
 static ofstream events;
 static ofstream scores;
-
-static atomic<bool> stopping { false };
 
 /* Read file cells */
 static vector<vector<string>> read_file(const string& in)
@@ -94,6 +93,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 
 	unordered_map<string, float> features;
 
+	/* Build action list for solving messages */
 	for (const auto& msg : game.messages()) {
 		actions.push_back({
 			"SOLVE " + msg.message + " FOR " + to_string(msg.reward) + " GOLD",
@@ -103,6 +103,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 			});
 	}
 
+	/* Build action list for buying items */
 	for (const auto& item : game.shop_items()) {
 		/*
 		 * Without this, the AI will just attempt to buy healing potions
@@ -172,19 +173,23 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 	}
 	const auto& [name, execute, get_features, max_score] = *max;
 
+	/* Log move summary */
 	ss << Strong(Magenta("Action chosen:")) << " cost=" << Emph(max_score) << " name=" << Emph(name) << endl;
 
+	/* Execute move */
 	execute();
 
 	auto post = GameState(game);
 
 	auto diff = post - pre;
 
+	/* Rebuild feature set */
 	features.clear();
 	extract_game_state(features, pre);
 	get_features();
 	extract_game_diff_state(features, diff);
 
+	/* Log features and changes */
 	log_event(events, features);
 
 	return max_score;
@@ -194,6 +199,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 static void play_game(mugloar::Game& game, const Costs& costs)
 {
 	while (!stopping && !game.dead()) {
+		/* Log game status */
 		stringstream ss;
 		ss << Strong("Game=") << Emph(Cyan(game.id()))
 			<< Strong(", Turn=") << Emph(int(game.turn()))
@@ -202,12 +208,17 @@ static void play_game(mugloar::Game& game, const Costs& costs)
 			<< Strong(", Lives=") << Magenta(Strong(Emph(int(game.lives()))))
 			<< Strong(", Gold=") << Yellow(Strong(Emph(int(game.gold()))))
 			<< endl;
+
+		/* Play a move */
 		play_move(game, costs, ss);
+
+		/* Print move summary */
 		ss << flush;
 		{
 			scoped_lock lock(io_mutex);
 			cerr << ss.rdbuf() << endl;
 		}
+
 	}
 }
 
@@ -215,8 +226,8 @@ static void worker_task(int index, const mugloar::Api& api, const Costs& costs)
 {
 	do {
 
+		/* Play game */
 		mugloar::Game game(api);
-
 		try {
 			play_game(game, costs);
 		} catch (std::runtime_error e) {
@@ -224,6 +235,7 @@ static void worker_task(int index, const mugloar::Api& api, const Costs& costs)
 			continue;
 		}
 
+		/* Log game result */
 		{
 			stringstream ss;
 			ss << "id=" << game.id() << "\tscore=" << game.score() << "\tturns=" << game.turn() << "\tlevel=" << game.level() << "\tlives=" << game.lives() << "\t" << endl << flush;
@@ -274,42 +286,27 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	/* Load feature cost data */
+
 	const auto raw_data = read_file(infilename);
 
 	const auto costs = read_costs(raw_data);
 
-	mugloar::Api api;
+	/* Open output files */
+
 	events = ofstream(outfilename, std::ios::binary | std::ios_base::app);
 	scores = ofstream(scorefilename, std::ios::binary | std::ios_base::app);
 
+	/* API binding */
+	mugloar::Api api;
+
+	/* Run once in this thread if only one run requested */
 	if (once) {
 		worker_task(0, api, costs);
 		return 0;
 	}
 
-	vector<thread> workers;
-	workers.reserve(worker_count);
-
-	cerr << "Starting " << worker_count << " workers..." << endl;
-
-	for (int i = 0; i < worker_count; i++) {
-		workers.emplace_back([&, i] () { worker_task(i, api, costs); });
-	}
-
-	cerr << "Started." << endl;
-
-	do {
-		cerr << "Press <q> <ENTER> to stop." << endl;
-	} while (getchar() != 'q');
-
-	stopping = true;
-
-	cerr << "Stopping..." << endl;
-
-	for (auto& worker : workers) {
-		worker.join();
-	}
-
-	cerr << "Stopped." << endl;
+	/* Create workers */
+	run_parallel(worker_count, [&] (int i) { worker_task(i, api, costs); });
 
 }
