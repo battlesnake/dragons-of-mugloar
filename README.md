@@ -45,6 +45,11 @@ To build:
     make -j
 
 
+To extract the training/tactical datasets:
+
+	tar -xaf ai-data.tar.xz
+
+
 To run the command-line interactive interface:
 
 	./mugcli
