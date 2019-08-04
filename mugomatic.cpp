@@ -224,14 +224,14 @@ static void worker_task(int index, const mugloar::Api& api, const Costs& costs)
 			continue;
 		}
 
-		stringstream ss;
-
-		ss << "id=" << game.id() << "\tscore=" << game.score() << "\tturns=" << game.turn() << "\tlevel=" << game.level() << "\tlives=" << game.lives() << "\t" << endl << flush;
-
 		{
+			stringstream ss;
+			ss << "id=" << game.id() << "\tscore=" << game.score() << "\tturns=" << game.turn() << "\tlevel=" << game.level() << "\tlives=" << game.lives() << "\t" << endl << flush;
+			auto str = ss.str();
+
 			scoped_lock lock(io_mutex);
-			cerr << ss.rdbuf();
-			scores << ss.rdbuf();
+			cerr << str;
+			scores << str << flush;
 		}
 
 	} while (!stopping);
