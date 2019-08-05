@@ -114,7 +114,7 @@ void extract_game_state(std::unordered_map<std::string, float>& features, const 
 	/* Boolean features for specific values */
 	features["lives:" + to_string(int(state.lives))] = 1;
 	features["level:" + to_string(int(state.level))] = 1;
-	features["gold:50min=" + to_string(int(state.gold / 50) * 50)] = 1;
+	features["gold50:" + to_string(int(state.gold / 50) * 50)] = 1;
 	features["turn:" + to_string(int(state.turn))] = 1;
 }
 
@@ -139,6 +139,9 @@ GameState::GameState(const Game& game) :
 	rep_underworld(game.underworld_rep()),
 	turn(game.turn())
 {
+	for (const auto& [item, count] : game.own_items()) {
+		items[item.id] = count;
+	}
 }
 
 GameStateDiff GameState::operator - (const GameState& r) const
