@@ -11,6 +11,7 @@
 #include "Menu.hpp"
 #include "AnsiCodes.hpp"
 #include "Game.hpp"
+#include "DumbAssist.hpp"
 
 using std::cerr;
 using std::cout;
@@ -93,19 +94,21 @@ int main(int argc, char *argv[])
 			/* Print current status */
 
 			cout << endl;
-			cout << Strong(Blue(std::string(40, '='))) << endl;
-			cout << Strong("Turn: #") << game.turn() << endl;
-			cout << Magenta("Lives: ") << game.lives() << endl;
-			cout << Yellow("Gold: ") << game.gold() << endl;
-			cout << Cyan("Level: ") << game.level() << endl;
-			cout << Green("Score: ") << game.score() << " (top: " << game.high_score() << ")" << endl;
+			cout << Strong(Blue(std::string(160, '='))) << endl;
+			cout << Strong("Game: ") << Emph(game.id()) << "    \t";
+			cout << Strong("Turn: ") << Emph(int(game.turn())) << "    \t";
+			cout << Magenta("Lives: ") << Emph(int(game.lives())) << "    \t";
+			cout << Yellow("Gold: ") << Emph(int(game.gold())) << "    \t";
+			cout << Cyan("Level: ") << Emph(int(game.level())) << "    \t";
+			cout << Green("Score: ") << Emph(int(game.score())) << " (top: " << game.high_score() << ")" << endl;
+			cout << endl;
 			cout << "Last known reputation: people=" << game.people_rep() << " state=" << game.state_rep() << " underworld=" << game.underworld_rep() << endl;
 			cout << endl;
 
-			/* Build owned-item histogram */
+			/* Build owned-item histogram, sorted by cost (asc) */
 			map<pair<Number, string>, int> histogram;
-			for (const auto& item : game.own_items()) {
-				auto [it, is_new] = histogram.try_emplace(make_pair(item.cost, item.name), 0);
+			for (const auto& [item, count] : game.own_items()) {
+				auto [it, is_new] = histogram.try_emplace(make_pair(Number(item.cost), item.name), 0);
 				it->second++;
 			}
 
@@ -127,15 +130,9 @@ int main(int argc, char *argv[])
 				"Query reputation",
 				[&] () { game.update_reputation(); });
 
-			/* Sort message list by risk (desc), reward(asc), turns (asc) */
-			set<tuple<Number, Number, Number, const mugloar::Message *>> msgs;
-			for (const auto& msg : game.messages()) {
-				msgs.emplace(int(mugloar::lookup_probability(msg.probability)), -msg.reward, -msg.expires_in, &msg);
-			}
-
 			/* Menu items for quests */
-			for (const auto& entry : msgs) {
-				const auto& msg = *std::get<3>(entry);
+			for (const auto *pmsg : sort_messages(game)) {
+				const auto& msg = *pmsg;
 				stringstream ss;
 				string expires_str = std::to_string(msg.expires_in);
 				if (msg.expires_in == 1) {
@@ -157,11 +154,16 @@ int main(int argc, char *argv[])
 			}
 
 			/* Menu items for purchasing from shop */
+			auto sorted_items = sort_items(game);
 			for (const auto& item : game.shop_items()) {
 				stringstream ss;
-				ss << "Buy item #" << item.id << " "
-						<< Emph(item.name)
-						<< " for " << Yellow(item.cost) << " gold";
+				ss << "Buy item #" << item.id << " ";
+				if (!sorted_items.empty() && sorted_items[0] == &item && item.cost <= game.gold()) {
+					ss << Strong(item.name);
+				} else {
+					ss << Emph(item.name);
+				}
+				ss << " for " << Yellow(item.cost) << " gold";
 				options.emplace_back(id,
 					ss.str(),
 					[&] () { game.purchase_item(item); });

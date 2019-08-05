@@ -2,16 +2,76 @@
 #include "Types.hpp"
 #include "Api.hpp"
 #include <vector>
+#include <unordered_map>
+#include <functional>
 
 namespace mugloar {
 
-/* Forward declarations */
+/* Message/advert */
+struct Message
+{
+	AdId id;
 
-class Game;
+	String message;
 
-struct Message;
+	/*
+	 * Bad doc:
+	 * "reward" is declared as "String" in doc, but example gives "Number".
+	 *
+	 * Ensure input-validation is tight.
+	 */
+	Number reward;
 
-struct Item;
+	/* Number of turns */
+	Number expires_in;
+
+	/*
+	 * Undocumented:
+	 * probability (String, possibly enum-string)
+	 */
+	String probability;
+
+	/*
+	 * Undocumented:
+	 * encrypted (number, nullable)
+	 */
+	Format cipher;
+};
+
+/* Item in shop or in our rucksack */
+struct Item
+{
+	ItemId id;
+
+	String name;
+
+	Number cost;
+};
+
+}
+
+
+template <>
+struct std::hash<mugloar::Item>
+{
+	inline size_t operator () (const mugloar::Item& item) const
+	{
+		return std::hash<std::string>{}(item.id);
+	}
+};
+
+template <>
+struct std::equal_to<mugloar::Item>
+{
+	inline bool operator () (const mugloar::Item& a, const mugloar::Item& b) const
+	{
+		return a.id == b.id;
+	}
+};
+
+
+namespace mugloar
+{
 
 enum Probability
 {
@@ -53,7 +113,7 @@ class Game
 
 	std::vector<Item> _shop_items;
 
-	std::vector<Item> _own_items;
+	std::unordered_map<Item, int> _own_items;
 
 	void turn_started();
 	void update_messages();
@@ -80,7 +140,7 @@ public:
 
 	const std::vector<Item>& shop_items() const { return _shop_items; }
 
-	const std::vector<Item>& own_items() const { return _own_items; }
+	const std::unordered_map<Item, int>& own_items() const { return _own_items; }
 
 	bool dead() const { return _lives == 0; }
 
@@ -94,47 +154,6 @@ public:
 	bool purchase_item(const Item& item);
 
 	void update_reputation();
-};
-
-/* Message/advert */
-struct Message
-{
-	AdId id;
-
-	String message;
-
-	/*
-	 * Bad doc:
-	 * "reward" is declared as "String" in doc, but example gives "Number".
-	 *
-	 * Ensure input-validation is tight.
-	 */
-	Number reward;
-
-	/* Number of turns */
-	Number expires_in;
-
-	/*
-	 * Undocumented:
-	 * probability (String, possibly enum-string)
-	 */
-	String probability;
-
-	/*
-	 * Undocumented:
-	 * encrypted (number, nullable)
-	 */
-	Format cipher;
-};
-
-/* Item in shop or in our rucksack */
-struct Item
-{
-	ItemId id;
-
-	String name;
-
-	Number cost;
 };
 
 }

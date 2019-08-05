@@ -157,7 +157,7 @@ bool Game::purchase_item(const Item& item)
 	bool success;
 	api.shop_buy_item(_id, item.id, success, _gold, _lives, _level, _turn);
 	if (success) {
-		_own_items.emplace_back(item);
+		_own_items.try_emplace(item, 0).first->second++;
 	}
 	turn_started();
 	return success;
