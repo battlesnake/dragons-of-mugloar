@@ -81,7 +81,9 @@ A simple AI player which uses pre-configured rules (rather than machine-learning
 	# Start basic AI
 	./mugobasic -o training.dat -s scores.dat
 
-Event log will be appended to "training.dat" in this case, and end-game scores to "scores.dat"
+Event log will be appended to "training.dat" in this case, and end-game scores to "scores.dat".
+
+This approach scores mostly in the 1200-2800 range, and has pretty low infant mortality.
 
 A simple self-learning regression model could be used to fine-tune some of the hard-coded constant numbers (e.g. thresholds) in the assitance subroutines.
 
@@ -137,6 +139,9 @@ To run the fully-automated luxury cromulent dragon trainer with 20 workers:
 	# This will run endlessly unless you quit it with <q> <ENTER>
 	./mugomatic -i feature_score.dat -o training.dat -s scores.dat -p 20
 	# Resulting scores (and game IDs) are appended to scores.dat
+
+
+The provided dataset allows the AI to score in the 800-1600 range, with high infant mortality.
 
 
 # Neural-network approach
