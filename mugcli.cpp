@@ -106,11 +106,13 @@ int main(int argc, char *argv[])
 			cout << "Last known reputation: people=" << game.people_rep() << " state=" << game.state_rep() << " underworld=" << game.underworld_rep() << endl;
 			cout << endl;
 
-			/* Build owned-item histogram, sorted by cost (asc) */
+			/*
+			 * Build owned-item histogram, sorted by cost (asc) then
+			 * by name (asc)
+			 */
 			map<pair<Number, string>, int> histogram;
 			for (const auto& [item, count] : game.own_items()) {
-				auto [it, is_new] = histogram.try_emplace(make_pair(Number(item.cost), item.name), 0);
-				it->second++;
+				histogram.try_emplace(make_pair(Number(item.cost), item.name), count);
 			}
 
 			/* Print owned-item histogram */

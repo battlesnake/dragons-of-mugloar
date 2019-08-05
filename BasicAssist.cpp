@@ -33,7 +33,7 @@ static auto message_ranker(const Message& msg)
 	 *  * expires soon > expires later
 	 */
 	return make_tuple(
-		-int(probability_risk(lookup_probability(msg.probability))),
+		-probability_risk(lookup_probability(msg.probability)),
 		-msg.reward,
 		msg.expires_in,
 		&msg);
@@ -84,7 +84,7 @@ static auto item_ranker(const Game& game, const Item& item)
 			can_spend -= 3 * HPOT_COST;
 		} else if (game.turn() > 60) {
 			can_spend -= 2 * HPOT_COST;
-		} else if (game.turn() > 20) {
+		} else if (game.lives() < 3) {
 			can_spend -= HPOT_COST;
 		}
 	}
@@ -103,7 +103,7 @@ static auto item_ranker(const Game& game, const Item& item)
 	bool can_buy;
 	switch (type) {
 	case HPOT: can_buy = need_hpot; break;
-	case BASIC: can_buy = game.turn() < 60; break;
+	case BASIC: can_buy = game.turn() < 100; break;
 	case ADVANCED: can_buy = true; break;
 	default: can_buy = true;
 	}
