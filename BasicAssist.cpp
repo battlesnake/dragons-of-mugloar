@@ -27,14 +27,17 @@ namespace mugloar
 static auto message_ranker(const Message& msg)
 {
 	/*
+	 * Scale reward by risk
+	 *
 	 * Ordering:
+	 *  * high (scaled) reward > low (scaled) reward
 	 *  * high safety > low safety
-	 *  * high reward > low reward
 	 *  * expires soon > expires later
 	 */
+	auto risk = probability_risk(lookup_probability(msg.probability));
 	return make_tuple(
-		-probability_risk(lookup_probability(msg.probability)),
-		-msg.reward,
+		-msg.reward * risk,
+		-risk,
 		msg.expires_in,
 		&msg);
 }
