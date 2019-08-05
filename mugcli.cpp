@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 			for (const auto *pmsg : sort_messages(game)) {
 				const auto& msg = *pmsg;
 				stringstream ss;
-				string expires_str = std::to_string(msg.expires_in);
+				string expires_str = std::to_string(int(msg.expires_in));
 				if (msg.expires_in == 1) {
 					expires_str = Red(expires_str);
 				} else if (msg.expires_in == 2) {
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 				}
 				ss << "Solve #" << msg.id
 						<< " at " << risk_str(mugloar::lookup_probability(msg.probability)) << " confidence "
-						<< "for " << Yellow(msg.reward) << " gold "
+						<< "for " << Yellow(int(msg.reward)) << " gold "
 						<< "(expires in " << expires_str << " turns)"
 						<< ": " << Emph(msg.message);
 				options.emplace_back(id,
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 				} else {
 					ss << Cyan(item.name);
 				}
-				ss << " for " << Yellow(item.cost) << " gold";
+				ss << " for " << Yellow(int(item.cost)) << " gold";
 				options.emplace_back(id,
 					ss.str(),
 					[&] () { game.purchase_item(item); });
