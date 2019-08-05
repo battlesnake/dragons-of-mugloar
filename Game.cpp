@@ -1,6 +1,7 @@
 #include <vector>
 #include <functional>
 #include <stdexcept>
+#include <limits>
 
 #include "LowerCase.hpp"
 #include "b64dec.hpp"
@@ -9,44 +10,37 @@
 
 using std::function;
 using std::string;
+using std::vector;
 using std::pair;
+using std::numeric_limits;
 
 namespace mugloar {
 
-static std::vector<string> prob_map {
-	/* Score: -20.4868 */
-	{ "piece of cake" },
-	/* Score: -21.1751 */
-	{ "sure thing" },
-	/* Score: -26.3083 */
-	{ "walk in the park" },
-	/* Score: -30.4547 */
-	{ "quite likely" },
-	/* Score: -35.0355 */
-	{ "hmmm...." },
-	/* Score: -37.837 */
-	{ "gamble" },
-	/* Score: -45.8725 */
-	{ "risky" },
-	/* Score: -46.1147 */
-	{ "rather detrimental" },
-	/* Score: -59.7092 */
-	{ "playing with fire" },
-	/* Score: -84.7348 */
-	{ "suicide mission" },
-	/* Score: -117.938 */
-	{ "impossible" },
+/* Risk values determined by machine learning, AKA "statistician but with higher salary" */
+static vector<pair<string, float>> prob_map {
+	{ "piece of cake", -20.4868 },
+	{ "sure thing", -21.1751 },
+	{ "walk in the park", -26.3083 },
+	{ "quite likely", -30.4547 },
+	{ "hmmm....", -35.0355 },
+	{ "gamble", -37.837 },
+	{ "risky", -45.8725 },
+	{ "rather detrimental", -46.1147 },
+	{ "playing with fire", -59.7092 },
+	{ "suicide mission", -84.7348 },
+	{ "impossible", -117.938 },
 };
 
 /* String to enum */
 Probability lookup_probability(std::string name)
 {
 	name = lowercase(name);
-	Probability p = Probability(0);
+	int p = 0;
 	for (const auto& s : prob_map) {
-		if (s == name) {
-			return p;
+		if (s.first == name) {
+			return Probability(p);
 		}
+		p++;
 	}
 	throw std::runtime_error("Invalid probability: " + name);
 }
@@ -54,11 +48,29 @@ Probability lookup_probability(std::string name)
 /* Enum to string */
 const std::string& reverse_lookup_probability(Probability p)
 {
-	if (p >= 0 && p < prob_map.size()) {
-		return prob_map[p];
-	} else {
+	if (p < 0 || p >= prob_map.size()) {
 		throw std::runtime_error("Invalid probability value");
 	}
+	return prob_map[p].first;
+}
+
+/* Normalises in every call, inefficient!  But vs time for API calls, not noticeable */
+float probability_risk(Probability p)
+{
+	if (p < 0 || p >= prob_map.size()) {
+		throw std::runtime_error("Invalid probability value");
+	}
+	/* Find min/max risk */
+	float m = numeric_limits<float>::infinity();
+	float M = -numeric_limits<float>::infinity();
+	for (const auto& [name, risk] : prob_map) {
+		(void) name;
+		m = std::min(m, risk);
+		M = std::max(M, risk);
+	}
+	/* Normalise risk value to 0..1 range (1 is low risk, 0 is high risk) */
+	float r = prob_map[p].second;
+	return (r - m) / (M - m);
 }
 
 Game::Game(const Api& api) :
@@ -74,14 +86,25 @@ void Game::turn_started()
 		return;
 	}
 	/* Reputation update advances a turn (or otherwise has some other annoying side-effect), do it before updating others */
-	update_reputation();
+	if (autoupdate_reputation) {
+		internal_update_reputation();
+	}
 	update_items();
 	update_messages();
 }
 
-void Game::update_reputation()
+/* Updates reputation (which costs a turn) but does call turn_started after */
+void Game::internal_update_reputation()
 {
 	api.investigate_reputation(_id, _people_rep, _state_rep, _underworld_rep);
+	_turn = _turn + 1;
+}
+
+/* Update reputation and advance client to next turn */
+void Game::update_reputation()
+{
+	internal_update_reputation();
+	turn_started();
 }
 
 void Game::update_messages()

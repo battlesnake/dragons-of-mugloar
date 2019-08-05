@@ -30,6 +30,7 @@ struct GameStateDiff
 	Number rep_people;
 	Number rep_state;
 	Number rep_underworld;
+	Number turn;
 };
 
 struct GameState
@@ -41,6 +42,7 @@ struct GameState
 	Number rep_people;
 	Number rep_state;
 	Number rep_underworld;
+	Number turn;
 
 	std::unordered_map<std::string, int> items;
 

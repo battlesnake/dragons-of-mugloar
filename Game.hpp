@@ -30,6 +30,7 @@ enum Probability
 
 Probability lookup_probability(std::string name);
 const std::string& reverse_lookup_probability(Probability p);
+float probability_risk(Probability p);
 
 /* Main class for a game instance */
 class Game
@@ -55,9 +56,9 @@ class Game
 	std::vector<Item> _own_items;
 
 	void turn_started();
-	void update_reputation();
 	void update_messages();
 	void update_items();
+	void internal_update_reputation();
 public:
 	Game(const Api& api);
 
@@ -83,12 +84,16 @@ public:
 
 	bool dead() const { return _lives == 0; }
 
+	/* Auto-update reputation after each action? */
+	bool autoupdate_reputation = true;
+
 	/* Methods */
 
 	std::pair<bool, String> solve_message(const Message& message);
 
 	bool purchase_item(const Item& item);
 
+	void update_reputation();
 };
 
 /* Message/advert */

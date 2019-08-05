@@ -107,6 +107,7 @@ void extract_game_state(std::unordered_map<std::string, float>& features, const 
 	features["game:rep_people"] = state.rep_people;
 	features["game:rep_state"] = state.rep_state;
 	features["game:rep_underworld"] = state.rep_underworld;
+	features["game:turn"] = state.turn;
 	for (const auto& [name, count] : state.items) {
 		features["item:" + name] = count;
 	}
@@ -114,6 +115,7 @@ void extract_game_state(std::unordered_map<std::string, float>& features, const 
 	features["lives:" + to_string(int(state.lives))] = 1;
 	features["level:" + to_string(int(state.level))] = 1;
 	features["gold:50min=" + to_string(int(state.gold / 50) * 50)] = 1;
+	features["turn:" + to_string(int(state.turn))] = 1;
 }
 
 void extract_game_diff_state(std::unordered_map<std::string, float>& features, const GameStateDiff& state_diff)
@@ -134,7 +136,8 @@ GameState::GameState(const Game& game) :
 	level(game.level()),
 	rep_people(game.people_rep()),
 	rep_state(game.state_rep()),
-	rep_underworld(game.underworld_rep())
+	rep_underworld(game.underworld_rep()),
+	turn(game.turn())
 {
 }
 
@@ -148,6 +151,7 @@ GameStateDiff GameState::operator - (const GameState& r) const
 	res.rep_people = rep_people - r.rep_people;
 	res.rep_state = rep_state - r.rep_state;
 	res.rep_underworld = rep_underworld - r.rep_underworld;
+	res.turn = turn - r.turn;
 	return res;
 }
 

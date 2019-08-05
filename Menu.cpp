@@ -3,16 +3,19 @@
 #include <stdexcept>
 
 #include "Menu.hpp"
+#include "AnsiCodes.hpp"
 
 /* Display single-choice menu and request choice from user */
 const MenuAction& menu(const Menu& items)
 {
 	using std::cerr;
 	using std::endl;
-	cerr << "Choices:" << endl;
+	cerr << Strong("Choices:") << endl;
 	for (const auto& [key, title, ignore] : items) {
-		cerr << "  [" << key << "]  " << title << endl;
+		cerr << "  [" << Strong(key) << "]  " << title << endl;
 	}
+	cerr << endl;
+	cerr << Emph("Press key for desired option followed by <ENTER>: ");
 	do {
 		char c = getchar();
 		if (c == EOF) {
@@ -27,7 +30,7 @@ const MenuAction& menu(const Menu& items)
 				return action;
 			}
 		}
-		cerr << "Invalid choice: [" << c << "]" << endl;
+		cerr << Red(Strong("Invalid choice:")) << "[" << Emph(c) << "]" << endl;
 	} while (true);
 }
 

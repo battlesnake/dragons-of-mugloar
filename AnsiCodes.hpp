@@ -11,8 +11,15 @@ public:
 	AnsiCodeWrap(const std::string& s) :
 		s("\x1b[" + std::to_string(begin) + "m" + s + "\x1b[" + std::to_string(end) + "m") { }
 
+	/*
+	 * These constructors are somewhat hacky, sacrificing good C++ style for
+	 * convenience with iostream usage.
+	 */
 	AnsiCodeWrap(const char *s) :
 		AnsiCodeWrap(std::string(s)) { }
+
+	AnsiCodeWrap(char c) :
+		AnsiCodeWrap(std::string(1, c)) { }
 
 	template <int begin2, int end2>
 	AnsiCodeWrap(const AnsiCodeWrap<begin2, end2>& acw) :
