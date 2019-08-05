@@ -35,6 +35,7 @@ struct Dataset
 	size_t rep_people_tag;
 	size_t rep_state_tag;
 	size_t rep_underworld_tag;
+	size_t level_tag;
 
 	/* Feature matrix size */
 	size_t cols = 0;
@@ -82,6 +83,11 @@ struct Dataset
 
 };
 
+static float asym(float x, float cost_neg, float cost_pos)
+{
+	return x >= 0 ? x * cost_pos : x * cost_neg;
+}
+
 /*
  * Calculate cost of operation based on changes.
  *
@@ -91,13 +97,15 @@ static float costfunction(const Dataset& ds, const vector<float>::const_iterator
 {
 	float cost = 0;
 	/* Each life = moderate value (gain), high value (loss) */
-	cost += v[ds.lives_tag] > 0 ? v[ds.lives_tag] * 30 : v[ds.lives_tag] * 150;
+	cost += asym(v[ds.lives_tag], 150, 30);
 	/* Score = 0.1 per point */
 	cost += v[ds.score_tag] * 0.1f;
-	/* Reputation = 10 per point */
-	cost += v[ds.rep_people_tag] * 10;
-	cost += v[ds.rep_state_tag] * 10;
-	cost += v[ds.rep_underworld_tag] * 10;
+	/* Reputation = 10 per loss, 20 per gain */
+	cost += asym(v[ds.rep_people_tag], 10, 20);
+	cost += asym(v[ds.rep_state_tag], 10, 20);
+	cost += asym(v[ds.rep_underworld_tag], 10, 20);
+	/* Level = 500 per level */
+	cost += v[ds.level_tag] * 500;
 
 	return cost;
 }
@@ -134,6 +142,7 @@ Dataset build_dataset(const vector<vector<string>>& data)
 	out.rep_people_tag = out.tags["diff:rep_people"];
 	out.rep_state_tag = out.tags["diff:rep_state"];
 	out.rep_underworld_tag = out.tags["diff:rep_underworld"];
+	out.level_tag = out.tags["diff:level"];
 
 	/* Set matrix geometry */
 	cerr << "Tags: " << out.tags.size() << endl;
