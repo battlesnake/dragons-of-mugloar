@@ -116,24 +116,33 @@ Dataset build_dataset(const vector<vector<string>>& data)
 	cerr << "Building dataset..." << endl;
 	Dataset out;
 
+	auto foreach_line = [&] (auto callback) {
+		size_t row = 0;
+		for (const auto& line : data) {
+			/* Skip lines with invalid number of fields */
+			if (line.empty() || (line.size() & 1) == 0) {
+				cerr << "Invalid line ignored" << endl;
+				continue;
+			}
+			for (auto it = line.begin() + 1, end = line.end(); it != end; it += 2) {
+				callback(row, it);
+			}
+			++row;
+		}
+	};
+
 	/* Assign each tag a unique number, used as column number to create the feature matrix */
 	out.tags.reserve(data.size() * 3);
 	out.tags.max_load_factor(10);
 	out.tags_r.reserve(data.size() * 3);
 	out.tags_r.max_load_factor(10);
-	for (const auto& line : data) {
-		if (line.empty() || (line.size() & 1) == 0) {
-			cerr << "Invalid line ignored" << endl;
-			continue;
+	foreach_line([&] (auto, auto col_it) {
+		auto [tag, is_new] = out.tags.try_emplace(*col_it, out.tags.size());
+		if (is_new) {
+			/* Add reverse mapping */
+			out.tags_r[tag->second] = tag->first;
 		}
-		for (auto it = line.begin() + 1, end = line.end(); it != end; it += 2) {
-			auto [tag, is_new] = out.tags.try_emplace(*it, out.tags.size());
-			if (is_new) {
-				/* Add reverse mapping */
-				out.tags_r[tag->second] = tag->first;
-			}
-		}
-	}
+	});
 
 	/* Lookup and cache column numbers for specific features */
 	out.score_tag = out.tags["diff:score"];
@@ -154,17 +163,10 @@ Dataset build_dataset(const vector<vector<string>>& data)
 	std::fill(out.data.begin(), out.data.end(), 0.0f);
 
 	/* Build the feature matrix */
-	size_t row = 0;
-	for (const auto& line : data) {
-		if (line.size() & 1) {
-			continue;
-		}
-		for (auto it = line.begin(), end = line.end(); it != end; it += 2) {
-			/* Lookup tag's column and set value */
-			out(row, out.tags[*it]) = std::stof(it[1]);
-		}
-		++row;
-	}
+	foreach_line([&] (auto row, auto col_it) {
+		/* Lookup tag's column and set value */
+		out(row, out.tags[*col_it]) = std::stof(col_it[1]);
+	});
 	return out;
 }
 
@@ -198,10 +200,10 @@ static vector<float> calc_row_costs(const Dataset& dataset)
 
 	vector<float> row_cost;
 
-	row_cost.resize(dataset.rows);
+	row_cost.reserve(dataset.rows);
 
 	for (size_t row = 0; row < dataset.rows; ++row) {
-		row_cost[row] = costfunction(dataset, dataset.row_begin(row));
+		row_cost.push_back(costfunction(dataset, dataset.row_begin(row)));
 	}
 
 	return row_cost;
@@ -212,17 +214,16 @@ static vector<pair<float, size_t>> calc_feature_costs(const Dataset& dataset, co
 	cerr << "Accumulating costs for each feature (no cross-correlation)" << endl;
 
 	vector<pair<float, size_t>> feature_cost;
-	feature_cost.resize(dataset.cols);
-	std::fill(feature_cost.begin(), feature_cost.end(), make_pair(0.0f, size_t(0)));
+	feature_cost.reserve(dataset.cols);
 
 	/* Accumulate cost per-feature */
 	for (size_t col = 0; col < dataset.cols; ++col) {
-		auto& [total_cost, samples] = feature_cost[col];
+		auto& [total_cost, samples] = feature_cost.emplace_back(0.0f, size_t(0));
 		for (size_t row = 0; row < dataset.rows; ++row) {
 			const auto& cost = row_cost[row];
 			const auto& input = dataset(row, col);
 			if (input != 0) {
-				total_cost += cost; // * input;
+				total_cost += cost;
 				samples++;
 			}
 		}
