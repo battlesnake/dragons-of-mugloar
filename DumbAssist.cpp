@@ -21,6 +21,9 @@ namespace mugloar
  * create a noticeable slowdown when the nesting gets high enough!
  */
 
+/*
+ * Simple tuple sort
+ */
 static auto message_ranker(const Message& msg)
 {
 	/*
@@ -30,118 +33,141 @@ static auto message_ranker(const Message& msg)
 	 *  * expires soon > expires later
 	 */
 	return make_tuple(
-		probability_risk(lookup_probability(msg.probability)),
-		msg.reward,
-		-msg.expires_in);
+		-int(probability_risk(lookup_probability(msg.probability))),
+		-msg.reward,
+		msg.expires_in,
+		&msg);
 }
 
-static constexpr auto HPOT_ID = "hpot";
-static constexpr auto HPOT_COST = 50;
-
+/*
+ * Filter and sort
+ *
+ * Recommend filtering out items which we can't afford (leaving sufficient hpot
+ * reserve).
+ *
+ * Recommend against buying a powerup item if we have less of some other powerup
+ * item.
+ *
+ * Only buy healing potion if we're down to the last life.
+ */
 static auto item_ranker(const Game& game, const Item& item)
 {
-	/* Is healing potion (+1 life) */
-	auto hpot = item.id == HPOT_ID;
+	enum ItemType {
+		HPOT,
+		BASIC,
+		ADVANCED,
+		UNKNOWN
+	} type;
 
-	/* Fudge factor */
-	bool prio = false;
-	if (hpot) {
-		if (game.turn() < 50) {
-			if (game.lives() == 1) {
-				prio = true;
-			}
-		} else if (game.turn() < 100) {
-			if (game.lives() < 3) {
-				prio = true;
-			}
-		} else if (game.lives() < 5) {
-			prio = true;
-		}
+	static constexpr auto HPOT_ID = "hpot";
+	static constexpr auto HPOT_COST = 50;
+
+	/* Is healing potion (+1 life) */
+	if (item.id == HPOT_ID) {
+		type = HPOT;
+	} else if (item.cost == 100) {
+		type = BASIC;
+	} else if (item.cost == 300) {
+		type = ADVANCED;
+	} else {
+		type = UNKNOWN;
 	}
 
-	/* How much can we afford to spend? */
+	/* How much can we afford to spend? (leaving reserve for HPOTs) */
 	Number can_spend = game.gold();
-	if (!hpot) {
-		if (game.turn() > 140) {
+	if (type != HPOT) {
+		if (game.turn() > 200) {
+			can_spend -= 7 * HPOT_COST;
+		} else if (game.turn() > 150) {
+			can_spend -= 5 * HPOT_COST;
+		} else if (game.turn() > 100) {
 			can_spend -= 3 * HPOT_COST;
-		} else if (game.turn() > 80) {
+		} else if (game.turn() > 60) {
 			can_spend -= 2 * HPOT_COST;
-		} else if (game.turn() > 10) {
+		} else if (game.turn() > 20) {
 			can_spend -= HPOT_COST;
 		}
 	}
 
-	/* Can we afford it (leaving enough for a healing potion */
+	/* Can we afford it (leaving enough for hpots */
 	bool can_afford = item.cost <= can_spend;
 
-	/* Which item (excluding hpot) do we have the least of? */
+	/* How many of this do we already own */
 	auto& own_items = game.own_items();
-	bool not_yet = false;
-	if (!own_items.empty()) {
-		auto fewest = own_items.begin();
-		for (auto it = own_items.begin(), end = own_items.end(); it != end; ++it) {
-			const auto& [own, count] = *it;
-			if (own.id != HPOT_ID && count <= fewest->second) {
-				/* If "item" is joint-least, tiebreak to "item" */
-				if (count < fewest->second || own.id == item.id) {
-					fewest = it;
-				}
-			}
-		}
-		not_yet = fewest->first.id != item.id;
-	}
-
-	/* How many do we already have? */
 	auto it = own_items.find(item);
 	int have = it == own_items.end() ? 0 : it->second;
 
-	/* Do we advise to buy this at all? */
-	bool recommend = prio && can_afford && !not_yet;
+	/* Do we need a healing potion urgently? */
+	bool need_hpot = game.lives() == 1;
 
-	/* Don't balance count of healing potions */
-	if (hpot) {
-		have = 1000;
+	bool can_buy;
+	switch (type) {
+	case HPOT: can_buy = need_hpot; break;
+	case BASIC: can_buy = game.turn() < 60; break;
+	case ADVANCED: can_buy = true; break;
+	default: can_buy = true;
 	}
+
+	can_buy = can_buy && can_afford;
 
 	/*
 	 * Ordering:
-	 *  * explicit priority > all others
-	 *  * can afford > can't afford
-	 *  * recommend > don't recommend
-	 *  * own less > own more (hpot forced to lose this comparison)
-	 *  * cheaper > costlier
+	 *  * we can buy > we can't buy
+	 *  * is hpot > is not hpot
+	 *  * have less > have more
+	 *  * cost more > cost less
 	 */
-	return make_tuple(prio, can_afford, recommend, -have, -item.cost);
+	return make_tuple(!can_buy, type != HPOT, have, item.cost, &item);
 }
 
 vector<const Message *> sort_messages(const Game& game)
 {
-	vector<const Message *> res;
-	res.reserve(game.messages().size());
+	/* Create rank table */
+	vector<decltype(message_ranker(Message{}))> tmp;
+	tmp.reserve(game.messages().size());
 
 	for (const auto& msg : game.messages()) {
-		res.push_back(&msg);
+		tmp.push_back(message_ranker(msg));
 	}
 
-	sort(res.begin(), res.end(), [] (auto *a, auto *b) {
-		return message_ranker(*a) > message_ranker(*b);
-	});
+	/* Sort rank table */
+	sort(tmp.begin(), tmp.end());
+
+	/* Build result */
+	vector<const Message *> res;
+	res.reserve(tmp.size());
+
+	for (const auto& t : tmp) {
+		res.push_back(std::get<3>(t));
+	}
 
 	return res;
 }
 
 vector<const Item *> sort_items(const Game& game)
 {
-	vector<const Item *> res;
-	res.reserve(game.shop_items().size());
+	/* Create rank table */
+	vector<decltype(item_ranker(game, Item{}))> tmp;
+	tmp.reserve(game.shop_items().size());
 
 	for (const auto& item : game.shop_items()) {
-		res.push_back(&item);
+		tmp.push_back(item_ranker(game, item));
 	}
 
-	sort(res.begin(), res.end(), [&] (auto *a, auto *b) {
-		return item_ranker(game, *a) > item_ranker(game, *b);
-	});
+	/* Sort rank table */
+	sort(tmp.begin(), tmp.end());
+
+	/* Build result */
+	vector<const Item *> res;
+	res.reserve(tmp.size());
+
+	/* Only add recommended items */
+	for (const auto& t : tmp) {
+		auto can_buy = ! std::get<0>(t);
+		if (can_buy) {
+			res.push_back(std::get<4>(t));
+		}
+	}
 
 	return res;
 }

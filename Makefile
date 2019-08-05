@@ -1,6 +1,6 @@
 # Binaries to make
 # Name "mugomatic" is tribute to Rogueomatic
-bin := mugcli mugcollect muglearn mugomatic
+bin := mugcli mugcollect muglearn mugomatic mugobasic
 
 # Objects to make
 obj := \

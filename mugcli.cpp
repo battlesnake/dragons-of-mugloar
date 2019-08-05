@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
 
 			cout << endl;
 			cout << Strong(Blue(std::string(160, '='))) << endl;
+			cout << endl;
 			cout << Strong("Game: ") << Emph(game.id()) << "    \t";
 			cout << Strong("Turn: ") << Emph(int(game.turn())) << "    \t";
 			cout << Magenta("Lives: ") << Emph(int(game.lives())) << "    \t";
@@ -159,9 +160,9 @@ int main(int argc, char *argv[])
 				stringstream ss;
 				ss << "Buy item #" << item.id << " ";
 				if (!sorted_items.empty() && sorted_items[0] == &item && item.cost <= game.gold()) {
-					ss << Strong(item.name);
+					ss << Strong(Cyan(item.name));
 				} else {
-					ss << Emph(item.name);
+					ss << Cyan(item.name);
 				}
 				ss << " for " << Yellow(item.cost) << " gold";
 				options.emplace_back(id,

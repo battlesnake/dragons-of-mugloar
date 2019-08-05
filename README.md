@@ -76,7 +76,14 @@ If you have docker installed, you can make use of the task runner script, which 
 
 # Hardcoded rules approach
 
-TODO
+A simple AI player which uses pre-configured rules (rather than machine-learning) can be invoked with:
+
+	# Start basic AI
+	./mugobasic -o training.dat -s scores.dat
+
+Event log will be appended to "training.dat" in this case, and end-game scores to "scores.dat"
+
+A simple self-learning regression model could be used to fine-tune some of the hard-coded constant numbers (e.g. thresholds) in the assitance subroutines.
 
 
 # Costed feature-set approach
@@ -94,6 +101,16 @@ TODO
 Failed purchase attempts could be useful for skipping turns, in the hope that bad messages get replaced with good ones.
 But we haven't implemented that decision-making yet.
 We do have the necessary training data collected to approach this though.
+
+We also need to resolve correlation/covariance issues, for example:
+
+ * presence of ROT13 cipher will correlate somewhat with turn number
+
+ * "Help defend" messages will also correlate somewhat with turn number
+
+
+Breaking down the dataset into uncorrelated pricipal compoments (compound features), then learning from those, will produce much better results than the current design.
+
 
 While this approach is unlikely to topple the current high-score (no normalisation, no covariance / feature correlation, no memory), it has given some useful information:
 
