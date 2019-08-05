@@ -53,12 +53,12 @@ static void play_move(mugloar::Game& game, ostream& ss)
 
 	if (auto items = sort_items(game); !items.empty()) {
 		const auto& item = *items[0];
-		ss << "Buying item " << Emph(Cyan(item.name)) << " for " << Yellow(item.cost) << " gold" << endl;
+		ss << "Buying item " << Emph(Cyan(item.name)) << " for " << Yellow(int(item.cost)) << " gold" << endl;
 		extract_action_features(features, item);
 		game.purchase_item(item);
 	} else if (auto msgs = sort_messages(game); !msgs.empty()) {
 		const auto& msg = *msgs[0];
-		ss << "Solving message " << Emph(Cyan(msg.message)) << " for " << Yellow(msg.reward) << " gold " << " with difficulty " << Magenta(msg.probability) << endl;
+		ss << "Solving message " << Emph(Cyan(msg.message)) << " for " << Yellow(int(msg.reward)) << " gold " << " with difficulty " << Magenta(msg.probability) << endl;
 		extract_action_features(features, msg);
 		game.solve_message(msg);
 	} else {

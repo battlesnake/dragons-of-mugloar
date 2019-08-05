@@ -96,7 +96,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 	/* Build action list for solving messages */
 	for (const auto& msg : game.messages()) {
 		actions.push_back({
-			"SOLVE " + msg.message + " FOR " + to_string(msg.reward) + " GOLD",
+			"SOLVE " + msg.message + " FOR " + to_string(int(msg.reward)) + " GOLD",
 			[&] () { game.solve_message(msg); },
 			[&] () { extract_action_features(features, msg); },
 			0
@@ -124,7 +124,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 			continue;
 		}
 		actions.push_back({
-			"BUY " + item.name + " FOR " + to_string(item.cost) + " GOLD",
+			"BUY " + item.name + " FOR " + to_string(int(item.cost)) + " GOLD",
 			[&] () { game.purchase_item(item); },
 			[&] () { extract_action_features(features, item); },
 			0
@@ -238,7 +238,7 @@ static void worker_task(int index, const mugloar::Api& api, const Costs& costs)
 		/* Log game result */
 		{
 			stringstream ss;
-			ss << "id=" << game.id() << "\tscore=" << game.score() << "\tturns=" << game.turn() << "\tlevel=" << game.level() << "\tlives=" << game.lives() << "\t" << endl << flush;
+			ss << "id=" << game.id() << "\tscore=" << int(game.score()) << "\tturns=" << int(game.turn()) << "\tlevel=" << int(game.level()) << "\tlives=" << int(game.lives()) << "\t" << endl << flush;
 			auto str = ss.str();
 
 			scoped_lock lock(io_mutex);

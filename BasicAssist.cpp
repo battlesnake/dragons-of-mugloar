@@ -133,7 +133,7 @@ static auto item_ranker(const Game& game, const Item& item)
 vector<const Message *> sort_messages(const Game& game)
 {
 	/* Create rank table */
-	vector<decltype(message_ranker(Message{}))> tmp;
+	vector<decltype(message_ranker(game, std::declval<Message>()))> tmp;
 	tmp.reserve(game.messages().size());
 
 	for (const auto& msg : game.messages()) {
@@ -157,7 +157,7 @@ vector<const Message *> sort_messages(const Game& game)
 vector<const Item *> sort_items(const Game& game)
 {
 	/* Create rank table */
-	vector<decltype(item_ranker(game, Item{}))> tmp;
+	vector<decltype(item_ranker(game, std::declval<Item>()))> tmp;
 	tmp.reserve(game.shop_items().size());
 
 	for (const auto& item : game.shop_items()) {
