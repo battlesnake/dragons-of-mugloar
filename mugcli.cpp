@@ -11,7 +11,7 @@
 #include "Menu.hpp"
 #include "AnsiCodes.hpp"
 #include "Game.hpp"
-#include "DumbAssist.hpp"
+#include "BasicAssist.hpp"
 
 using std::cerr;
 using std::cout;

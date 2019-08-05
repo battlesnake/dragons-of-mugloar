@@ -16,7 +16,7 @@
 #include "LogEvent.hpp"
 #include "AnsiCodes.hpp"
 #include "Parallel.hpp"
-#include "DumbAssist.hpp"
+#include "BasicAssist.hpp"
 
 using std::string;
 using std::string_view;

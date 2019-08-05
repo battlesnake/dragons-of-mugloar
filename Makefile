@@ -11,7 +11,7 @@ obj := \
 	LogEvent.oxx \
 	LowerCase.oxx \
 	Parallel.oxx \
-	DumbAssist.oxx \
+	BasicAssist.oxx \
 	b64dec.oxx rot13dec.oxx \
 	$(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
 
