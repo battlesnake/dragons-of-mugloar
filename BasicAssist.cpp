@@ -12,13 +12,6 @@ namespace mugloar
 
 /*
  * The ranker functions return tuples which we use in comparators for sorting.
- *
- * The tuples should really be pre-calculated once rather then being calculated
- * every time a comparator is invoked.
- *
- * Given inefficiencies elsewhere (e.g. in probability_risk function), these
- * inefficient loops wrapping more inefficient loops could really start to
- * create a noticeable slowdown when the nesting gets high enough!
  */
 
 /*

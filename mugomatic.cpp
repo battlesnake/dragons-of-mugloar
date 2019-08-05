@@ -118,7 +118,8 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 		 * The learning process only analyses single moves and does not
 		 * learn to buy other items based on future benefits that they
 		 * deliver (as it doesn't look more than 1 move into the future
-		 * from an action).
+		 * from an action).  This has been partially mitigated by having
+		 * a high reward for actions which increase the level.
 		 */
 		if (item.cost > game.gold()) {
 			continue;
@@ -131,9 +132,9 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 			});
 	}
 
-	/* Calculate estimated costs */
-
 	auto pre = GameState(game);
+
+	/* Calculate estimated cost for each action */
 
 	typename decltype(actions)::pointer max = nullptr;
 	bool unknown = false;
@@ -153,11 +154,12 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 				score += value * it->second;
 			} else {
 				if (!unknown) {
+					/* Unknown features: warn user */
 					ss << " * Unknown feature:";
 					unknown = true;
 				}
 				ss << "  [" << feature << "]";
-				score += -100;
+				score += -5;
 			}
 		}
 		if (max == nullptr || score > std::get<3>(*max)) {

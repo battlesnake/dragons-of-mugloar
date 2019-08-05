@@ -52,16 +52,19 @@ static void play_move(mugloar::Game& game, ostream& ss)
 	auto pre = GameState(game);
 
 	if (auto items = sort_items(game); !items.empty()) {
+		/* If "buy item" action available, do it */
 		const auto& item = *items[0];
 		ss << "Buying item " << Emph(Cyan(item.name)) << " for " << Yellow(int(item.cost)) << " gold" << endl;
 		extract_action_features(features, item);
 		game.purchase_item(item);
 	} else if (auto msgs = sort_messages(game); !msgs.empty()) {
+		/* Else, if "solve message" action available, do it */
 		const auto& msg = *msgs[0];
 		ss << "Solving message " << Emph(Cyan(msg.message)) << " for " << Yellow(int(msg.reward)) << " gold " << " with difficulty " << Magenta(msg.probability) << endl;
 		extract_action_features(features, msg);
 		game.solve_message(msg);
 	} else {
+		/* Else, burn a turn */
 		game.update_reputation();
 	}
 
@@ -78,7 +81,9 @@ static void play_move(mugloar::Game& game, ostream& ss)
 
 static void play_game(mugloar::Game& game)
 {
+	/* Keep playing until we die */
 	while (!stopping && !game.dead()) {
+
 		/* Log game status */
 		stringstream ss;
 		ss << Strong("Game=") << Emph(Cyan(game.id()))
@@ -104,6 +109,7 @@ static void play_game(mugloar::Game& game)
 
 static void worker_task(int index, const mugloar::Api& api)
 {
+	/* Keep playing games until stop is requested by user */
 	do {
 
 		/* Play game */

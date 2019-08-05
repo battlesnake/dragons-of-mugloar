@@ -29,6 +29,7 @@ struct Dataset
 	unordered_map<string, size_t> tags;
 	unordered_map<size_t, string> tags_r;
 
+	/* Index of column associated with each feature */
 	size_t score_tag;
 	size_t lives_tag;
 	size_t gold_tag;
@@ -83,6 +84,7 @@ struct Dataset
 
 };
 
+/* Asymmetric cost - differs for loss vs gain */
 static float asym(float x, float cost_neg, float cost_pos)
 {
 	return x >= 0 ? x * cost_pos : x * cost_neg;
@@ -116,12 +118,13 @@ Dataset build_dataset(const vector<vector<string>>& data)
 	cerr << "Building dataset..." << endl;
 	Dataset out;
 
+	/* Helper function to iterate over the string grid */
 	auto foreach_line = [&] (auto callback) {
 		size_t row = 0;
 		for (const auto& line : data) {
 			/* Skip lines with invalid number of fields */
 			if (line.empty() || (line.size() & 1) == 0) {
-				cerr << "Invalid line ignored" << endl;
+				cerr << "Invalid line #" << (row + 1) << " ignored" << endl;
 				continue;
 			}
 			for (auto it = line.begin() + 1, end = line.end(); it != end; it += 2) {
@@ -202,6 +205,7 @@ static vector<float> calc_row_costs(const Dataset& dataset)
 
 	row_cost.reserve(dataset.rows);
 
+	/* Calculate cost of each row and store it */
 	for (size_t row = 0; row < dataset.rows; ++row) {
 		row_cost.push_back(costfunction(dataset, dataset.row_begin(row)));
 	}
@@ -209,6 +213,7 @@ static vector<float> calc_row_costs(const Dataset& dataset)
 	return row_cost;
 }
 
+/* Calculate cost of each feature (assumes features are independent, which is false) */
 static vector<pair<float, size_t>> calc_feature_costs(const Dataset& dataset, const vector<float>& row_cost)
 {
 	cerr << "Accumulating costs for each feature (no cross-correlation)" << endl;
@@ -229,6 +234,10 @@ static vector<pair<float, size_t>> calc_feature_costs(const Dataset& dataset, co
 		}
 	}
 
+	/*
+	 * Normalise each feature cost by number of samples, punishing ones
+	 * which we have few samples for
+	 */
 	for (auto& [value, samples] : feature_cost) {
 		/* We only weakly consider features that we haven't sampled much */
 		value /= (samples + 20);
@@ -243,6 +252,7 @@ static void save_result(const Dataset& dataset, const vector<pair<float, size_t>
 
 	ofstream f(filename);
 
+	/* Saves tuples of (cost, samples, name) */
 	for (size_t col = 0; col < dataset.cols; ++col) {
 		const auto& header = dataset.tags_r.at(col);
 		const auto& [value, samples] = feature_cost[col];

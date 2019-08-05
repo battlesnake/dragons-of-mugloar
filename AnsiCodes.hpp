@@ -40,6 +40,8 @@ std::ostream& operator << (std::ostream& os, const AnsiCodeWrap<begin, end>& acw
 	return os;
 }
 
+/* VT10x codes which work on most Unix terminals */
+
 using Strong = AnsiCodeWrap<1, 22>;
 using Emph = AnsiCodeWrap<4, 24>;
 

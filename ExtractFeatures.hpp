@@ -17,10 +17,13 @@ namespace mugloar {
  */
 void extract_action_features(std::unordered_map<std::string, float>& features, const std::string& type, const std::string& description);
 
+/* Helper function for extracting features from SOLVE action */
 void extract_action_features(std::unordered_map<std::string, float>& features, const Message& message);
 
+/* Helper function for extracting features from BUY action */
 void extract_action_features(std::unordered_map<std::string, float>& features, const Item& item);
 
+/* Partial change between game states */
 struct GameStateDiff
 {
 	Number score;
@@ -33,6 +36,7 @@ struct GameStateDiff
 	Number turn;
 };
 
+/* Partial state of game */
 struct GameState
 {
 	Number score;
@@ -56,7 +60,10 @@ struct GameState
 
 };
 
+/* Extract feature-set from game state */
 void extract_game_state(std::unordered_map<std::string, float>& features, const GameState& state);
+
+/* Extract feature-set from game state diff */
 void extract_game_diff_state(std::unordered_map<std::string, float>& features, const GameStateDiff& state_diff);
 
 }

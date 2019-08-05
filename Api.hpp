@@ -5,6 +5,7 @@
 
 namespace mugloar {
 
+/* String-field cipher types */
 enum Format
 {
 	PLAIN,

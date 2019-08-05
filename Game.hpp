@@ -51,28 +51,35 @@ struct Item
 }
 
 
-template <>
-struct std::hash<mugloar::Item>
+/* Helpers to allow use of mugloar::Item with std::unordered_{map,set} */
+namespace std
 {
-	inline size_t operator () (const mugloar::Item& item) const
-	{
-		return std::hash<std::string>{}(item.id);
-	}
-};
 
-template <>
-struct std::equal_to<mugloar::Item>
-{
-	inline bool operator () (const mugloar::Item& a, const mugloar::Item& b) const
+	template <>
+	struct hash<mugloar::Item>
 	{
-		return a.id == b.id;
-	}
-};
+		inline size_t operator () (const mugloar::Item& item) const
+		{
+			return hash<string>{}(item.id);
+		}
+	};
+
+	template <>
+	struct equal_to<mugloar::Item>
+	{
+		inline bool operator () (const mugloar::Item& a, const mugloar::Item& b) const
+		{
+			return a.id == b.id;
+		}
+	};
+
+}
 
 
 namespace mugloar
 {
 
+/* Enum for undocumented "probability" field in messages */
 enum Probability
 {
 	PIECE_OF_CAKE = 0,
@@ -88,8 +95,13 @@ enum Probability
 	IMPOSSIBLE
 };
 
+/* Enum from string */
 Probability lookup_probability(std::string name);
+
+/* String from enum */
 const std::string& reverse_lookup_probability(Probability p);
+
+/* Risk factor for probability (0=suicide, 1=safe) [Values obtained via ML] */
 float probability_risk(Probability p);
 
 /* Main class for a game instance */

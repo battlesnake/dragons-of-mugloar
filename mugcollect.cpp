@@ -71,6 +71,7 @@ static void worker_task(size_t worker_id, const Api& api)
 
 			unordered_map<string, float> features;
 
+			/* Messages */
 			for (const auto& msg : game.messages()) {
 				actions.push_back({
 					[&] () { game.solve_message(msg); },
@@ -78,6 +79,7 @@ static void worker_task(size_t worker_id, const Api& api)
 					});
 			}
 
+			/* Items in shop */
 			for (const auto& item : game.shop_items()) {
 				actions.push_back({
 					[&] () { game.purchase_item(item); },
@@ -85,6 +87,7 @@ static void worker_task(size_t worker_id, const Api& api)
 					});
 			}
 
+			/* Randomly select an action */
 			int action_idx = uniform_int_distribution<int>(0, actions.size() - 1)(prng);
 			const auto& [action, get_features] = actions[action_idx];
 
