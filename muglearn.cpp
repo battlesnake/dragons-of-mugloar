@@ -114,11 +114,11 @@ Dataset build_dataset(const vector<vector<string>>& data)
 	out.tags_r.reserve(data.size() * 3);
 	out.tags_r.max_load_factor(10);
 	for (const auto& line : data) {
-		if (line.size() & 1) {
-			cerr << "Line with odd-number of entries ignored" << endl;
+		if (line.empty() || (line.size() & 1) == 0) {
+			cerr << "Invalid line ignored" << endl;
 			continue;
 		}
-		for (auto it = line.begin(), end = line.end(); it != end; it += 2) {
+		for (auto it = line.begin() + 1, end = line.end(); it != end; it += 2) {
 			auto [tag, is_new] = out.tags.try_emplace(*it, out.tags.size());
 			if (is_new) {
 				/* Add reverse mapping */

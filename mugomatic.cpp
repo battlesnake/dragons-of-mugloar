@@ -190,7 +190,7 @@ static float play_move(mugloar::Game& game, const unordered_map<string, float>& 
 	extract_game_diff_state(features, diff);
 
 	/* Log features and changes */
-	log_event(events, features);
+	log_event(events, game, features);
 
 	return max_score;
 

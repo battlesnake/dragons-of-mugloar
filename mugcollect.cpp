@@ -108,7 +108,7 @@ static void worker_task(size_t worker_id, const Api& api)
 			extract_game_diff_state(features, diff);
 
 			/* Emit action features and state change */
-			log_event(outfile, features);
+			log_event(outfile, game, features);
 
 			/* This post-action state is the next iteration's pre-action state */
 			pre = post;

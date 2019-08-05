@@ -14,11 +14,13 @@ namespace mugloar
 {
 
 /* Emit event features to log file */
-void log_event(ostream& f, const unordered_map<string, float>& entry)
+void log_event(ostream& f, const Game& game, const unordered_map<string, float>& entry)
 {
 	static mutex io_mutex;
 	static size_t count = 0;
 	scoped_lock lock(io_mutex);
+
+	f << game.id() << "\t";
 
 	for (const auto& [key, value] : entry) {
 		f << key << "\t" << value << "\t";
