@@ -58,7 +58,7 @@ static void play_move(mugloar::Game& game, ostream& ss)
 		game.purchase_item(item);
 	} else if (auto msgs = sort_messages(game); !msgs.empty()) {
 		const auto& msg = *msgs[0];
-		ss << "Solving message " << Emph(Cyan(msg.message)) << " for " << Yellow(msg.reward) << " gold " << " with difficulty " << Magenta(lookup_probability(msg.probability)) << endl;
+		ss << "Solving message " << Emph(Cyan(msg.message)) << " for " << Yellow(msg.reward) << " gold " << " with difficulty " << Magenta(msg.probability) << endl;
 		extract_action_features(features, msg);
 		game.solve_message(msg);
 	} else {
