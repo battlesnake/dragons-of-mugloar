@@ -24,7 +24,7 @@ namespace mugloar
 /*
  * Simple tuple sort
  */
-static auto message_ranker(const Message& msg)
+static auto message_ranker(const Game& game, const Message& msg)
 {
 	/*
 	 * Scale reward by risk
@@ -33,11 +33,18 @@ static auto message_ranker(const Message& msg)
 	 *  * high (scaled) reward > low (scaled) reward
 	 *  * high safety > low safety
 	 *  * expires soon > expires later
+	 *
+	 * If we're down to the last life, pick the safest option, and rank
+	 * second by reward.
+	 *
+	 * If we're taking an action with 1 life left, it means we can't afford
+	 * a health potion, so we need a *safe* 50 gold.
 	 */
+	bool safe = game.lives() == 1;
 	auto risk = probability_risk(lookup_probability(msg.probability));
 	return make_tuple(
-		-msg.reward * risk,
-		-risk,
+		safe ? -risk : -msg.reward * risk,
+		safe ? -msg.reward : -risk,
 		msg.expires_in,
 		&msg);
 }
@@ -130,7 +137,7 @@ vector<const Message *> sort_messages(const Game& game)
 	tmp.reserve(game.messages().size());
 
 	for (const auto& msg : game.messages()) {
-		tmp.push_back(message_ranker(msg));
+		tmp.push_back(message_ranker(game, msg));
 	}
 
 	/* Sort rank table */
