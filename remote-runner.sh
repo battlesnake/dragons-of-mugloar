@@ -20,7 +20,7 @@ ssh "$remote" 'if ! which docker &>/dev/null; then sudo apt update && sudo apt i
 ssh "$remote" mkdir -p mugloar
 
 # Sync files over
-rsync -azlv --exclude='.git*' --include={'*.cpp','*.hpp','*.sh',Makefile} --exclude='*' ./ "$remote":mugloar
+rsync -azlv --exclude='.git*' --include={'*.cpp','*.hpp','*.sh',Makefile,build.docker,lib,'lib/**'} --exclude='*' ./ "$remote":mugloar
 
 # Run tasks(s)
 ssh -t "$remote" env -C mugloar ./runner.sh "$@"
