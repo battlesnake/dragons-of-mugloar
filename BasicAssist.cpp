@@ -76,20 +76,20 @@ static auto item_ranker(const Game& game, const Item& item)
 	/* How much can we afford to spend? (leaving reserve for HPOTs) */
 	Number can_spend = game.gold();
 	if (type != HPOT) {
-		if (game.turn() > 200) {
-			can_spend -= 7 * HPOT_COST;
-		} else if (game.turn() > 150) {
-			can_spend -= 5 * HPOT_COST;
+		int reserve = 0;
+		if (game.turn() > 150) {
+			reserve = 7;
 		} else if (game.turn() > 100) {
-			can_spend -= 3 * HPOT_COST;
+			reserve = 5;
 		} else if (game.turn() > 60) {
-			can_spend -= 2 * HPOT_COST;
+			reserve = 2;
 		} else if (game.lives() < 3) {
-			can_spend -= HPOT_COST;
+			reserve = 1;
 		}
+		can_spend -= reserve * HPOT_COST;
 	}
 
-	/* Can we afford it (leaving enough for hpots */
+	/* Can we afford it (leaving enough for hpots) */
 	bool can_afford = item.cost <= can_spend;
 
 	/* How many of this do we already own */
@@ -103,7 +103,7 @@ static auto item_ranker(const Game& game, const Item& item)
 	bool can_buy;
 	switch (type) {
 	case HPOT: can_buy = need_hpot; break;
-	case BASIC: can_buy = game.turn() < 100; break;
+	case BASIC: can_buy = game.turn() < 60; break;
 	case ADVANCED: can_buy = true; break;
 	default: can_buy = true;
 	}
@@ -112,7 +112,7 @@ static auto item_ranker(const Game& game, const Item& item)
 
 	/*
 	 * Ordering:
-	 *  * we can buy > we can't buy
+	 *  * we should buy > we shouldn't buy
 	 *  * is hpot > is not hpot
 	 *  * have less > have more
 	 *  * cost more > cost less
