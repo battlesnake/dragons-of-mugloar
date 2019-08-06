@@ -89,7 +89,7 @@ Since both approaches easily beat the target score of 1000 on a regular basis, I
 
  * Before that commit, this approach scored mostly in the 8000-18000 range.
 
- * After that commit, this approach scores mostly in the wider 3000-19000 range, but occasionally exceeds 300000!  Yes earthlings and martians, that's over 10⁵ points!  *dbz-vegeta-meme.jpg*
+ * After that commit, this approach scores mostly in the wider 3000-19000 range, but occasionally exceeds 500000!  Yes earthlings and martians, that's over 10⁵ points and no sign of stopping either!  *dbz-vegeta-meme.jpg*
 
 Now that wider range might be slightly worrying to those who like consistency, so a few things to remember:
 
