@@ -21,7 +21,22 @@ static constexpr auto HPOT_ID = "hpot";
 static constexpr auto HPOT_COST = 50;
 
 /* Estimated cost of wasting a turn (multiplied by turn number) */
-static constexpr auto TURN_COST = 0.3f;
+static constexpr auto TURN_COST = 0.5f;
+
+/* How much can we afford to spend? (leaving reserve for HPOTs) */
+static Number can_spend(const Game& game)
+{
+	int reserve = 0;
+	if (game.turn() > 100) {
+		reserve = 3;
+	} else if (game.turn() > 50) {
+		reserve = 2;
+	} else if (game.lives() < 3) {
+		reserve = 1;
+	}
+	reserve -= game.lives() - 1;
+	return game.gold() - std::max(0, reserve) * HPOT_COST;
+}
 
 /*
  * The ranker functions return tuples which we use in comparators for sorting.
@@ -49,6 +64,9 @@ static auto message_ranker(const Game& game, const Message& msg)
 	 * Subtract from reward the cost of healing potion weighted by risk of death.
 	 *
 	 * Also consider reputation risk, unless we're on our last life.
+	 *
+	 * Moves which push us over a cost boundary (50/100/300) get extra
+	 * reward of potentially saving us a turn.
 	 */
 	bool safe = game.lives() == 1;
 	auto risk = probability_risk(lookup_probability(msg.probability));
@@ -81,8 +99,16 @@ static auto message_ranker(const Game& game, const Message& msg)
 	const auto& [_prefix, r_p, r_s, r_u] = rep_change;
 	auto change_l1 = r_p + r_s + r_u;
 	auto rep_loss = (change_l1 < 0 ? 100 : 10) * -change_l1;
+
+	/* Calculate bonus due to item cost boundary */
+	auto gold = can_spend(game);
+	auto cross = [&] (Number threshold) {
+		return (gold < threshold) && (gold + msg.reward >= threshold);
+	};
+	auto cross_gain = cross(100) || cross(300) ? TURN_COST : 0;
+
 	return make_tuple(
-		safe ? -risk : -(msg.reward * risk - hpot_loss - rep_loss - turn_loss),
+		safe ? -risk : -((msg.reward + cross_gain) * risk - hpot_loss - rep_loss - turn_loss),
 		safe ? -msg.reward : -risk,
 		msg.expires_in,
 		&msg);
@@ -119,23 +145,8 @@ static auto item_ranker(const Game& game, const Item& item)
 		type = UNKNOWN;
 	}
 
-	/* How much can we afford to spend? (leaving reserve for HPOTs) */
-	Number can_spend = game.gold();
-	if (type != HPOT) {
-		int reserve = 0;
-		if (game.turn() > 50) {
-			reserve = 3;
-		} else if (game.turn() > 20) {
-			reserve = 2;
-		} else if (game.lives() < 3) {
-			reserve = 1;
-		}
-		reserve -= game.lives() - 1;
-		can_spend -= std::max(0, reserve) * HPOT_COST;
-	}
-
 	/* Can we afford it (leaving enough for hpots) */
-	bool can_afford = item.cost <= can_spend;
+	bool can_afford = item.cost <= (type == HPOT ? game.gold() : can_spend(game));
 
 	/* How many of this do we already own */
 	auto& own_items = game.own_items();

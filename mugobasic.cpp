@@ -81,6 +81,12 @@ static void play_move(mugloar::Game& game, ostream& ss)
 
 static void play_game(mugloar::Game& game)
 {
+	/*
+	 * We don't care about reputation, we've already statically modelled it
+	 * somewhat in the assistant
+	 */
+	game.autoupdate_reputation = false;
+
 	/* Keep playing until we die */
 	while (!stopping && !game.dead()) {
 
