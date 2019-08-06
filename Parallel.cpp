@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <unistd.h>
 
 #include "Parallel.hpp"
 
@@ -28,9 +29,16 @@ void run_parallel(int worker_count, function<void(int)> task)
 	cerr << "Started." << endl;
 
 	/* Wait for user to request quit */
-	do {
-		cerr << "Press <q> <ENTER> to stop." << endl;
-	} while (getchar() != 'q');
+	if (isatty(STDIN_FILENO)) {
+		do {
+			cerr << "Press <q> <ENTER> to stop." << endl;
+		} while (getchar() != 'q');
+	} else {
+		/* If input is not a tty, wait for some other source of quit request */
+		while (!stopping) {
+			usleep(100000);
+		}
+	}
 
 	/* Co-operatively request workers to stop */
 	stopping = true;
