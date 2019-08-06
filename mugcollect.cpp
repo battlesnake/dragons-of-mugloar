@@ -1,3 +1,7 @@
+/*
+ * Executes random actions to build/extend the initial training dataset for
+ * costed feature AI agent.
+ */
 #include <thread>
 #include <atomic>
 #include <random>

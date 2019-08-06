@@ -1,3 +1,7 @@
+/*
+ * Analyses event log from mugcollect/mugobasic/mugomatic, generating feature
+ * cost table for machine-learning AI agent.
+ */
 #include <iostream>
 #include <fstream>
 #include <string>

@@ -1,3 +1,7 @@
+/*
+ * Text-user interface to manually play the game, with recommendations for item
+ * purchases and quest sorting provided by the basic AI agent.
+ */
 #include <iostream>
 #include <string>
 #include <sstream>

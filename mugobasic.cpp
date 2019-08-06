@@ -1,3 +1,9 @@
+/*
+ * Basic AI agent, using pre-programmed rules
+ *
+ * Will also append to event log that's used by the costed feature
+ * machine-learning AI agent.
+ */
 #include <atomic>
 #include <mutex>
 #include <iostream>
