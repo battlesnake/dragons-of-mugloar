@@ -224,12 +224,15 @@ static void play_game(mugloar::Game& game, const Costs& costs)
 	}
 }
 
-static void worker_task(int index, const mugloar::Api& api, const Costs& costs)
+static void worker_task(int index, const mugloar::Api& api, const Costs& costs, bool ignore_reputation)
 {
 	do {
 
 		/* Play game */
 		mugloar::Game game(api);
+		if (ignore_reputation) {
+			game.autoupdate_reputation = false;
+		}
 		try {
 			play_game(game, costs);
 		} catch (std::runtime_error e) {
@@ -258,6 +261,7 @@ static void help()
 	cerr << "  -o output-filename" << endl;
 	cerr << "  -s score-filename" << endl;
 	cerr << "  -p worker-count" << endl;
+	cerr << "  -r (to ignore reputation)" << endl;
 }
 
 int main(int argc, char *argv[])
@@ -269,15 +273,17 @@ int main(int argc, char *argv[])
 	const char *scorefilename = nullptr;
 	int worker_count = 20;
 	bool once = false;
+	bool ignore_reputation = false;
 
 	char c;
-	while ((c = getopt(argc, argv, "hi:o:s:p:1")) != -1) {
+	while ((c = getopt(argc, argv, "hi:o:s:p:1r")) != -1) {
 		switch (c) {
 		case 'h': help(); return 1;
 		case 'i': infilename = optarg; break;
 		case 'o': outfilename = optarg; break;
 		case 's': scorefilename = optarg; break;
 		case 'p': worker_count = std::stoi(optarg); break;
+		case 'r': ignore_reputation = true; break;
 		case '1': once = true; break;
 		case '?': help(); return 1;
 		}
@@ -304,11 +310,11 @@ int main(int argc, char *argv[])
 
 	/* Run once in this thread if only one run requested */
 	if (once) {
-		worker_task(0, api, costs);
+		worker_task(0, api, costs, ignore_reputation);
 		return 0;
 	}
 
 	/* Create workers */
-	run_parallel(worker_count, [&] (int i) { worker_task(i, api, costs); });
+	run_parallel(worker_count, [&] (int i) { worker_task(i, api, costs, ignore_reputation); });
 
 }
