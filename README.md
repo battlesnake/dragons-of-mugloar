@@ -82,8 +82,9 @@ A simple AI player which uses pre-configured rules (rather than machine-learning
 	./mugobasic -o training.dat -s scores.dat
 
 Event log will be appended to "training.dat" in this case, and end-game scores to "scores.dat".
+The event log can be used to train the machine-learning player(s).
 
-This approach scores mostly in the 1200-2800 range, and has pretty low infant mortality.
+This approach scores mostly in the 2200-3200 range, and has pretty low infant mortality.
 
 A simple self-learning regression model could be used to fine-tune some of the hard-coded constant numbers (e.g. thresholds) in the assitance subroutines.
 
@@ -142,6 +143,11 @@ To run the fully-automated luxury cromulent dragon trainer with 20 workers:
 
 
 The provided dataset allows the AI to score in the 800-1600 range, with high infant mortality.
+
+A pre-studied `feature_score.dat` is provided in ai-data.tar.xz.
+Generating it from the training data (`training.dat`) in that tarball requires 80GB+ of RAM.
+
+It would be interesting to import the training dataset into some NoSQL system e.g. Mongo/Hadoop, and perform some deeper analysis on it there.
 
 
 # Neural-network approach

@@ -1,14 +1,27 @@
 #include <algorithm>
 #include <tuple>
+#include <string>
+#include <vector>
 
 #include "BasicAssist.hpp"
 
 using std::vector;
+using std::tuple;
+using std::string;
 using std::sort;
 using std::make_tuple;
 
 namespace mugloar
 {
+
+/* Healing potion item id */
+static constexpr auto HPOT_ID = "hpot";
+
+/* Healing potion cost */
+static constexpr auto HPOT_COST = 50;
+
+/* Estimated cost of wasting a turn (multiplied by turn number) */
+static constexpr auto TURN_COST = 0.3f;
 
 /*
  * The ranker functions return tuples which we use in comparators for sorting.
@@ -32,11 +45,44 @@ static auto message_ranker(const Game& game, const Message& msg)
 	 *
 	 * If we're taking an action with 1 life left, it means we can't afford
 	 * a health potion, so we need a *safe* 50 gold.
+	 *
+	 * Subtract from reward the cost of healing potion weighted by risk of death.
+	 *
+	 * Also consider reputation risk, unless we're on our last life.
 	 */
 	bool safe = game.lives() == 1;
 	auto risk = probability_risk(lookup_probability(msg.probability));
+	auto hpot_loss = (1 - risk) * HPOT_COST;
+	auto turn_loss = game.turn() * TURN_COST;
+	/* Calculate risk due to reputation change */
+	static const vector<tuple<string, float, float, float>> rep_changes {
+		{ "Help ", +1, 0, 0 },
+		// { "Help ", +0.3 /* to ? */, 0, 0 },
+		// { "Help ", +0.1 /* to sell? */, 0, 0 },
+		// { "Help ", +1.0 /* to write? */, 0, 0 },
+		{ "Investigate ", -0.1, +1, 0 },
+		{ "Create an advertisement ", +1, 0, 0 },
+		{ "Escort ", +1, 0, 0 },
+		// { "Escort ", 0.1, 0, 0 },
+		{ "Rescue ", 0.1, 0, 0 },
+		{ "Steal ", +1, -2, 0 },
+		{ "Infiltrate ", 0, +2, -1 },
+		/* Unknown */
+		{ "Kill ", 0, 0, 0 },
+	};
+	tuple<string, float, float, float> rep_change { "None", 0, 0, 0 };
+	for (const auto& t : rep_changes) {
+		const auto& prefix = std::get<0>(t);
+		if (msg.message.substr(0, prefix.size()) == prefix) {
+			rep_change = t;
+			break;
+		}
+	}
+	const auto& [_prefix, r_p, r_s, r_u] = rep_change;
+	auto change_l1 = r_p + r_s + r_u;
+	auto rep_loss = (change_l1 < 0 ? 100 : 10) * -change_l1;
 	return make_tuple(
-		safe ? -risk : -msg.reward * risk,
+		safe ? -risk : -(msg.reward * risk - hpot_loss - rep_loss - turn_loss),
 		safe ? -msg.reward : -risk,
 		msg.expires_in,
 		&msg);
@@ -62,9 +108,6 @@ static auto item_ranker(const Game& game, const Item& item)
 		UNKNOWN
 	} type;
 
-	static constexpr auto HPOT_ID = "hpot";
-	static constexpr auto HPOT_COST = 50;
-
 	/* Is healing potion (+1 life) */
 	if (item.id == HPOT_ID) {
 		type = HPOT;
@@ -80,16 +123,15 @@ static auto item_ranker(const Game& game, const Item& item)
 	Number can_spend = game.gold();
 	if (type != HPOT) {
 		int reserve = 0;
-		if (game.turn() > 150) {
-			reserve = 7;
-		} else if (game.turn() > 100) {
-			reserve = 5;
-		} else if (game.turn() > 60) {
+		if (game.turn() > 50) {
+			reserve = 3;
+		} else if (game.turn() > 20) {
 			reserve = 2;
 		} else if (game.lives() < 3) {
 			reserve = 1;
 		}
-		can_spend -= reserve * HPOT_COST;
+		reserve -= game.lives() - 1;
+		can_spend -= std::max(0, reserve) * HPOT_COST;
 	}
 
 	/* Can we afford it (leaving enough for hpots) */
@@ -106,7 +148,7 @@ static auto item_ranker(const Game& game, const Item& item)
 	bool can_buy;
 	switch (type) {
 	case HPOT: can_buy = need_hpot; break;
-	case BASIC: can_buy = game.turn() < 60; break;
+	case BASIC: can_buy = have == 0; break;
 	case ADVANCED: can_buy = true; break;
 	default: can_buy = true;
 	}
