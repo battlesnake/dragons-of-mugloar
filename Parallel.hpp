@@ -1,4 +1,8 @@
 #pragma once
+/*
+ * Provides means to run a task multiple times concurrently in worker-threads,
+ * and to request those threads to quit at the user's request.
+ */
 #include <functional>
 #include <atomic>
 

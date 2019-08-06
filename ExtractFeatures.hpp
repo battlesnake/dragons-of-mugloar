@@ -1,4 +1,10 @@
 #pragma once
+/*
+ * Used to generate feature-sets from game state and from actions.
+ *
+ * These feature sets are then used by the machine-learning program (muglearn)
+ * to develop strategies for the ML-driven automated player (mugomatic).
+ */
 #include <unordered_map>
 #include <string>
 #include <vector>

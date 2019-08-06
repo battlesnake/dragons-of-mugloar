@@ -1,4 +1,10 @@
 #pragma once
+/*
+ * Log state of game and feature-sets to the event file, which can be analysed
+ * in order to understand what works and what doesn't wokr (tactically).
+ *
+ * This log file is used by the machine-learning player's learner program.
+ */
 #include <ostream>
 #include <unordered_map>
 #include <string>

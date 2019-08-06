@@ -1,17 +1,15 @@
 #pragma once
+/*
+ * Provide RPC interface to backend, encapsulates API calls
+ *
+ * TODO:
+ * Does very little error checking and will probably just crash on timeouts.
+ */
 #include <functional>
 #include <string>
 #include "Types.hpp"
 
 namespace mugloar {
-
-/* String-field cipher types */
-enum Format
-{
-	PLAIN,
-	BASE64,
-	ROT13
-};
 
 /* Makes calls to API endpoints and returns parsed response fields */
 class Api

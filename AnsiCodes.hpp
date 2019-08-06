@@ -1,4 +1,8 @@
 #pragma once
+/*
+ * Hacky decorators for adding ANSI VT10x formatting to strings for printing to
+ * terminal
+ */
 #include <string>
 
 /* Wrap a string in ANSI VT100-style terminal codes */

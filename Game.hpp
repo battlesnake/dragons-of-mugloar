@@ -1,4 +1,9 @@
 #pragma once
+/*
+ * Stateful client-side of game.
+ *
+ * Provides functions to query game state and methods to execute actions.
+ */
 #include "Types.hpp"
 #include "Api.hpp"
 #include <vector>

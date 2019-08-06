@@ -1,4 +1,7 @@
 #pragma once
+/*
+ * Basic type aliases and definitions for the game
+ */
 #include <string>
 
 namespace mugloar {
@@ -12,6 +15,10 @@ using String = std::string;
 /*
  * Range / precision not specified in the docs.
  * Will assume <double> for now.
+ *
+ * I'm 99.999% certain that most fields (excluding reputation) are ints, and
+ * that (reputation*10) could also be accurately stored as an int.  But since
+ * the API calls are our bottleneck, we'll use double/float anyway.
  */
 using Number = double;
 
@@ -19,5 +26,13 @@ using Number = double;
 using GameId = String;
 using AdId = String;
 using ItemId = String;
+
+/* String-field cipher types */
+enum Format
+{
+	PLAIN,
+	BASE64,
+	ROT13
+};
 
 }

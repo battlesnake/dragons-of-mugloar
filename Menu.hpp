@@ -1,4 +1,7 @@
 #pragma once
+/*
+ * Provides function to display a TUI menu and ask the user to choose an option
+ */
 #include <vector>
 #include <tuple>
 #include <string>

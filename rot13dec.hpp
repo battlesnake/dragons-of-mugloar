@@ -1,4 +1,7 @@
 #pragma once
+/*
+ * ROT13 decoder (can also be used as encoder since ROT13 is self-inverse).
+ */
 #include <string>
 
 namespace mugloar
