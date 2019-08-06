@@ -27,9 +27,7 @@ static constexpr auto TURN_COST = 0.5f;
 static Number can_spend(const Game& game)
 {
 	int reserve = 0;
-	if (game.turn() > 100) {
-		reserve = 3;
-	} else if (game.turn() > 50) {
+	if (game.turn() > 50) {
 		reserve = 2;
 	} else if (game.lives() < 3) {
 		reserve = 1;
