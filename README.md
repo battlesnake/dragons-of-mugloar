@@ -84,9 +84,34 @@ A simple AI player which uses pre-configured rules (rather than machine-learning
 Event log will be appended to "training.dat" in this case, and end-game scores to "scores.dat".
 The event log can be used to train the machine-learning player(s).
 
-This approach scores mostly in the 8000-18000 range, and has pretty low infant mortality.
+Now we have to decide between consistent results in a narrow range (via risk-averse behaviour), or inconsistent results with insane outliers (via aggressive behaviour).
+Since both approaches easily beat the target score of 1000 on a regular basis, I've switched from conservative to aggressive behaviour in commit #1957442:
 
-A simple self-learning regression model could be used to fine-tune some of the hard-coded constant numbers (e.g. thresholds) in the assitance subroutines.
+ * Before that commit, this approach scored mostly in the 8000-18000 range.
+
+ * After that commit, this approach scores mostly in the wider 3000-19000 range, but occasionally exceeds a100000!  Yes earthlings and martians, that's over 10^5 points!  \*inserts DragonBall-Z Vegeta meme\*
+
+Now that wider range might be slightly worrying to those who like consistency, so a few things to remember:
+
+ * Dying with a low score happens much more quickly than dying with a high-score, so there are potentially 100 low-scoring games played in the time that it takes for one mega-ultra-high-scoring game to finish.
+
+ * While this aggressive late-game results in a lower mean `score`, the mean of `(score / game turns)` is probably much higher due to the crazy outliers that we're now achieving.
+
+I think that the turning point is when `level` > `turn`.  Once we achieve that, we're pretty much immortal.
+The probability of success on a mission is probably calculated in the backend with an expression like:
+
+    p_enum * (level + bias) / turn
+
+Where `p_enum` is the undocumented `probability` field in the message.
+
+So we have bias towards success early on due to the `bias` term which I estimate to be around 20ish, but once `level + bias` lags behind `turn` then things start to get increasingly harder.
+As a consequence, when `level` exceeds `turn`, things start to get increasingly easier, to the point that we basically can't die (aside from very rare statistical noise).
+When we're reliably earning 6k+ gold per mission, the rate of score-increase really drops off, as it takes us 20+ turns to spend all the gold before our next mission.  Given that the 300-gold items give +2 level, this just increases the `level/turn` ratio further, making us even more immortal.
+
+I think I broke the game.
+
+
+A simple self-learning regression model could be used to fine-tune some of the hard-coded constant numbers (e.g. thresholds) in the assitance subroutines, but why bother when we're already scoring over 100k, utterly destroying the previous high-score by nearly an order of magnitude?
 
 
 # Costed feature-set approach
