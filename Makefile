@@ -12,7 +12,7 @@ obj := \
 	LowerCase.oxx \
 	Parallel.oxx \
 	BasicAssist.oxx \
-	b64dec.oxx rot13dec.oxx \
+	Base64dec.oxx Rot13dec.oxx \
 	$(patsubst lib/cpr/cpr/%.cpp, %.oxx, $(wildcard lib/cpr/cpr/*.cpp))
 
 libs := -lcurl -licuuc -lpthread -lm

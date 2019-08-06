@@ -1,6 +1,6 @@
 #include <iterator>
 #include <basen.hpp>
-#include "b64dec.hpp"
+#include "Base64dec.hpp"
 
 namespace mugloar
 {

@@ -4,8 +4,8 @@
 #include <limits>
 
 #include "LowerCase.hpp"
-#include "b64dec.hpp"
-#include "rot13dec.hpp"
+#include "Base64dec.hpp"
+#include "Rot13dec.hpp"
 #include "Game.hpp"
 
 using std::function;
