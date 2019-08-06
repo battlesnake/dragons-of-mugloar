@@ -89,7 +89,7 @@ Since both approaches easily beat the target score of 1000 on a regular basis, I
 
  * Before that commit, this approach scored mostly in the 8000-18000 range.
 
- * After that commit, this approach scores mostly in the wider 3000-19000 range, but occasionally exceeds a100000!  Yes earthlings and martians, that's over 10^5 points!  \*inserts DragonBall-Z Vegeta meme\*
+ * After that commit, this approach scores mostly in the wider 3000-19000 range, but occasionally exceeds 300000!  Yes earthlings and martians, that's over 10⁵ points!  *dbz-vegeta-meme.jpg*
 
 Now that wider range might be slightly worrying to those who like consistency, so a few things to remember:
 
@@ -102,7 +102,7 @@ The probability of success on a mission is probably calculated in the backend wi
 
     p_enum * (level + bias) / turn
 
-Where `p_enum` is the undocumented `probability` field in the message.
+Where `p_enum` is the undocumented `probability` field in the message, and `bias` is there to make the early-game playable.
 
 So we have bias towards success early on due to the `bias` term which I estimate to be around 20ish, but once `level + bias` lags behind `turn` then things start to get increasingly harder.
 As a consequence, when `level` exceeds `turn`, things start to get increasingly easier, to the point that we basically can't die (aside from very rare statistical noise).
