@@ -124,7 +124,6 @@ static void worker_task(int index, const mugloar::Api& api)
 			play_game(game);
 		} catch (std::runtime_error e) {
 			cerr << "Worker #" << index << ": error: " << e.what() << endl;
-			continue;
 		}
 
 		/* Log game result */
