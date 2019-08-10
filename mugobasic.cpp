@@ -184,7 +184,7 @@ static void worker_task()
 		mugloar::Game game(api);
 		try {
 			play_game(game);
-		} catch (std::runtime_error e) {
+		} catch (const std::runtime_error& e) {
 			cerr << "Worker #" << worker_id << ": error: " << e.what() << endl;
 		}
 

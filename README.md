@@ -8,7 +8,7 @@ Requires for building:
 
  * GNU Make v4+
 
- * C++17 compiler (e.g. recent version of gcc / clang)
+ * C++17 compiler (e.g. gcc 9.1 / clang 8.0)
 
  * libcurl
 

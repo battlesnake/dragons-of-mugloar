@@ -104,7 +104,7 @@ static void worker_task()
 			/* Execute action */
 			try {
 				action();
-			} catch (std::runtime_error e) {
+			} catch (const std::runtime_error& e) {
 				cerr << "Exception in worker " << worker_id << ": " << e.what() << endl;
 				break;
 			}

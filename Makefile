@@ -32,7 +32,7 @@ CXXFLAGS := \
 	-MMD \
 	-g -O$(O) \
 	-pipe \
-	-Wall -Wno-logical-op-parentheses -Wextra -Werror
+	-Wall -Wno-logical-op-parentheses -Wno-parentheses -Wextra -Werror
 
 # Use address- and undefined-behaviour- sanitizers when debugging
 ifeq ($(O),0)

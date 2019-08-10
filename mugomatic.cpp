@@ -243,7 +243,7 @@ static void worker_task(const Costs& costs, bool ignore_reputation)
 		}
 		try {
 			play_game(game, costs);
-		} catch (std::runtime_error e) {
+		} catch (const std::runtime_error& e) {
 			cerr << "Worker #" << worker_id << ": error: " << e.what() << endl;
 		}
 
