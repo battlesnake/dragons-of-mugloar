@@ -54,6 +54,7 @@ static ofstream events;
 static mutex score_mutex;
 static pair<long, string> best_score { 0, "(none)" };
 static vector<string> current_scores;
+static atomic<long> total_turns { 0 };
 
 /* API binding */
 static const mugloar::Api api;
@@ -93,6 +94,8 @@ static void play_move(mugloar::Game& game, ostream& ss)
 
 	/* Log features and changes */
 	log_event(events, game, features);
+
+	++total_turns;
 }
 
 static void print_scores()
@@ -105,6 +108,8 @@ static void print_scores()
 	}
 	ss << endl;
 	ss << Strong("Best: ") << best_score.second << endl;
+	ss << endl;
+	ss << Strong("Total turns: ") << total_turns << endl;
 	ss << endl;
 }
 
