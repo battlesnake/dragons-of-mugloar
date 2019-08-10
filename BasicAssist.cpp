@@ -27,7 +27,9 @@ static constexpr auto TURN_COST = 0.5f;
 static Number can_spend(const Game& game)
 {
 	int reserve = 0;
-	if (game.turn() > 50) {
+	if (game.turn() > 200) {
+		reserve = 5;
+	} else if (game.turn() > 50) {
 		reserve = 2;
 	} else if (game.lives() < 3) {
 		reserve = 1;
@@ -156,12 +158,36 @@ static auto item_ranker(const Game& game, const Item& item)
 
 	bool can_buy;
 	switch (type) {
+	/*
+	 * Don't spend turns on hpots unless we need them.  Instead, reserve
+	 * enough cash to be able to buy several as needed (implemented in
+	 * can_spend function).
+	 */
 	case HPOT: can_buy = need_hpot; break;
+	/*
+	 * Only buy one of each basic.  We need them to survive long enough to
+	 * get onto the big items, but they are a pretty inefficient way to use
+	 * a turn in the late game.
+	 */
 	case BASIC: can_buy = have == 0; break;
-	case ADVANCED: can_buy = true; break;
+	/*
+	 * Cap the level/turn ratio; buying stuff doesn't increase score so if
+	 * we buy level-ups at every possible chance then our score grows too
+	 * slowly.
+	 *
+	 * Settle for "almost invincible" (1.2 ratio) and rely on the fact that
+	 * once we pass the point of insane growth, we're reserving enough gold
+	 * for 5 health potions, so we're pretty tough against statistical
+	 * anomalies too (regarding mission failures).
+	 */
+	case ADVANCED: can_buy = game.level() < game.turn() * 1.2; break;
+	/*
+	 * Unknown mysterious items that we haven't come across yet?
+	 */
 	default: can_buy = true;
 	}
 
+	/* Pretty self-explanatory */
 	can_buy = can_buy && can_afford;
 
 	/*
