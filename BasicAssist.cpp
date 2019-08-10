@@ -31,7 +31,10 @@ static constexpr auto TURN_COST = 0.5f;
  * Too close to 1 though, and we spend too many turns buying healing potions.
  *
  * A value of 1.2 results in us spending 20% of turns buying healing potions in
- * the late-game
+ * the late-game.
+ *
+ * A value of 1.4 results in us spending less than 1% of turns buying healing
+ * potions in the late-game.
  */
 static constexpr auto LEVEL_TURN_CAP = 1.4;
 
