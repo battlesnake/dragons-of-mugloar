@@ -9,5 +9,11 @@
 /* Set when we want the workers to exit */
 extern std::atomic<bool> stopping;
 
+/* Status update requested (check with test_and_set, false = print update) */
+extern std::atomic_flag status_request;
+
+/* Worker index */
+extern thread_local int worker_id;
+
 /* Run multiple instances of task in separate threads, wait for use to request exit */
-void run_parallel(int worker_count, std::function<void(int)> task);
+void run_parallel(int worker_count, std::function<void()> task);

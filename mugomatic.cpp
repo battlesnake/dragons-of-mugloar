@@ -52,6 +52,9 @@ static mutex io_mutex;
 static ofstream events;
 static ofstream scores;
 
+/* API binding */
+static const Api api;
+
 /* Read file cells */
 static vector<vector<string>> read_file(const string& in)
 {
@@ -229,7 +232,7 @@ static void play_game(mugloar::Game& game, const Costs& costs)
 	}
 }
 
-static void worker_task(int index, const mugloar::Api& api, const Costs& costs, bool ignore_reputation)
+static void worker_task(const Costs& costs, bool ignore_reputation)
 {
 	do {
 
@@ -241,7 +244,7 @@ static void worker_task(int index, const mugloar::Api& api, const Costs& costs, 
 		try {
 			play_game(game, costs);
 		} catch (std::runtime_error e) {
-			cerr << "Worker #" << index << ": error: " << e.what() << endl;
+			cerr << "Worker #" << worker_id << ": error: " << e.what() << endl;
 		}
 
 		/* Log game result */
@@ -276,11 +279,10 @@ int main(int argc, char *argv[])
 	const char *outfilename = nullptr;
 	const char *scorefilename = nullptr;
 	int worker_count = 20;
-	bool once = false;
 	bool ignore_reputation = false;
 
 	char c;
-	while ((c = getopt(argc, argv, "hi:o:s:p:1r")) != -1) {
+	while ((c = getopt(argc, argv, "hi:o:s:p:r")) != -1) {
 		switch (c) {
 		case 'h': help(); return 1;
 		case 'i': infilename = optarg; break;
@@ -288,7 +290,6 @@ int main(int argc, char *argv[])
 		case 's': scorefilename = optarg; break;
 		case 'p': worker_count = std::stoi(optarg); break;
 		case 'r': ignore_reputation = true; break;
-		case '1': once = true; break;
 		case '?': help(); return 1;
 		}
 	}
@@ -309,16 +310,7 @@ int main(int argc, char *argv[])
 	events = ofstream(outfilename, std::ios::binary | std::ios_base::app);
 	scores = ofstream(scorefilename, std::ios::binary | std::ios_base::app);
 
-	/* API binding */
-	mugloar::Api api;
-
-	/* Run once in this thread if only one run requested */
-	if (once) {
-		worker_task(0, api, costs, ignore_reputation);
-		return 0;
-	}
-
 	/* Create workers */
-	run_parallel(worker_count, [&] (int i) { worker_task(i, api, costs, ignore_reputation); });
+	run_parallel(worker_count, [&] () { worker_task(costs, ignore_reputation); });
 
 }

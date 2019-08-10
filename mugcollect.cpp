@@ -47,8 +47,11 @@ using namespace mugloar;
 /* Output file for event log */
 static ofstream outfile;
 
+/* API binding */
+static const Api api;
+
 /* One worker (automated player) */
-static void worker_task(size_t worker_id, const Api& api)
+static void worker_task()
 {
 	random_device rd;
 	mt19937 prng(rd());
@@ -156,10 +159,7 @@ int main(int argc, char *argv[])
 	/* Open output file */
 	outfile = ofstream(outfilename, std::ios::binary | std::ios_base::app);
 
-	/* API binding */
-	Api api;
-
 	/* Start workers */
-	run_parallel(worker_count, [&] (int i) { worker_task(i, api); });
+	run_parallel(worker_count, [&] () { worker_task(); });
 
 }

@@ -51,6 +51,26 @@ static mutex io_mutex;
 static ofstream scores;
 static ofstream events;
 
+static mutex score_mutex;
+static pair<string, long> best_score { "(none)", 0 };
+static vector<pair<string, long>> current_scores;
+
+/* API binding */
+static const mugloar::Api api;
+
+static void print_scores(ostream& ss)
+{
+	scoped_lock lock(score_mutex);
+	ss << endl;
+	ss << Strong("Best score so far: ") << Cyan(best_score.second) << " " << Emph(Green(best_score.first)) << endl;
+	ss << endl;
+	for (size_t i = 0; i < current_scores.size(); i++) {
+		const auto& [game, score] = current_scores[i];
+		ss << Strong("Worker #") << i << Strong(": ") << Emph(Magenta(score)) << " " << Emph(Green(game)) << endl;
+	}
+	ss << endl;
+}
+
 static void play_move(mugloar::Game& game, ostream& ss)
 {
 	unordered_map<string, float> features;
@@ -93,6 +113,11 @@ static void play_game(mugloar::Game& game)
 	 */
 	game.autoupdate_reputation = false;
 
+	{
+		scoped_lock lock(score_mutex);
+		current_scores[worker_id] = { game.id(), game.score() };
+	}
+
 	/* Keep playing until we die */
 	while (!stopping && !game.dead()) {
 
@@ -109,6 +134,21 @@ static void play_game(mugloar::Game& game)
 		/* Play a move */
 		play_move(game, ss);
 
+		/* Update scoreboard */
+		{
+			scoped_lock lock(score_mutex);
+			long score = game.score();
+			current_scores[worker_id] = { game.id(), score };
+			if (score > best_score.second) {
+				best_score = { game.id(), score };
+			}
+		}
+
+		/* Check for status request */
+		if (!status_request.test_and_set()) {
+			print_scores(ss);
+		}
+
 		/* Print move summary */
 		ss << flush;
 		{
@@ -119,7 +159,7 @@ static void play_game(mugloar::Game& game)
 	}
 }
 
-static void worker_task(int index, const mugloar::Api& api)
+static void worker_task()
 {
 	/* Keep playing games until stop is requested by user */
 	do {
@@ -129,7 +169,7 @@ static void worker_task(int index, const mugloar::Api& api)
 		try {
 			play_game(game);
 		} catch (std::runtime_error e) {
-			cerr << "Worker #" << index << ": error: " << e.what() << endl;
+			cerr << "Worker #" << worker_id << ": error: " << e.what() << endl;
 		}
 
 		/* Log game result */
@@ -161,16 +201,14 @@ int main(int argc, char *argv[])
 	const char *outfilename = nullptr;
 	const char *scorefilename = nullptr;
 	int worker_count = 20;
-	bool once = false;
 
 	char c;
-	while ((c = getopt(argc, argv, "ho:s:p:1")) != -1) {
+	while ((c = getopt(argc, argv, "ho:s:p:")) != -1) {
 		switch (c) {
 		case 'h': help(); return 1;
 		case 'o': outfilename = optarg; break;
 		case 's': scorefilename = optarg; break;
 		case 'p': worker_count = std::stoi(optarg); break;
-		case '1': once = true; break;
 		case '?': help(); return 1;
 		}
 	}
@@ -185,16 +223,14 @@ int main(int argc, char *argv[])
 	events = ofstream(outfilename, std::ios::binary | std::ios_base::app);
 	scores = ofstream(scorefilename, std::ios::binary | std::ios_base::app);
 
-	/* API binding */
-	mugloar::Api api;
-
-	/* Run once in this thread if only one run requested */
-	if (once) {
-		worker_task(0, api);
-		return 0;
-	}
+	/* Initialise score table */
+	current_scores.resize(worker_count);
+	std::fill(current_scores.begin(), current_scores.end(), best_score);
 
 	/* Create workers */
-	run_parallel(worker_count, [&] (int i) { worker_task(i, api); });
+	run_parallel(worker_count, worker_task);
+
+	/* Print scores */
+	print_scores(cerr);
 
 }
