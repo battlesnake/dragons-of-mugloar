@@ -67,7 +67,8 @@ void run_parallel(int worker_count, function<void()> task)
 
 	/* Wait for user to request quit */
 	if (isatty(STDIN_FILENO)) {
-		cerr << "Press <Ctrl+C> to stop." << endl;
+		cerr << endl << "Press <Ctrl+C> to stop." << endl << endl;
+		usleep(500000);
 	}
 
 	/* Loop until stop requested by signal */
