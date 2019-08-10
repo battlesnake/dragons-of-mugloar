@@ -44,6 +44,8 @@ using std::mutex;
 using std::scoped_lock;
 using namespace mugloar;
 
+using Int = long long;
+
 /* For synchronising IO to files and STDERR */
 static mutex io_mutex;
 
@@ -52,9 +54,9 @@ static ofstream scores;
 static ofstream events;
 
 static mutex score_mutex;
-static pair<long, string> best_score { 0, "(none)" };
+static pair<Int, string> best_score { 0, "(none)" };
 static vector<string> current_scores;
-static atomic<long> total_turns { 0 };
+static atomic<Int> total_turns { 0 };
 
 /* API binding */
 static const mugloar::Api api;
@@ -71,13 +73,13 @@ static void play_move(mugloar::Game& game, ostream& ss)
 	if (auto items = sort_items(game); !items.empty()) {
 		/* If "buy item" action available, do it */
 		const auto& item = *items[0];
-		ss << "Buying item " << Emph(Cyan(item.name)) << " for " << Yellow(int(item.cost)) << " gold" << endl;
+		ss << "Buying item " << Emph(Cyan(item.name)) << " for " << Yellow(Int(item.cost)) << " gold" << endl;
 		extract_action_features(features, item);
 		game.purchase_item(item);
 	} else if (auto msgs = sort_messages(game); !msgs.empty()) {
 		/* Else, if "solve message" action available, do it */
 		const auto& msg = *msgs[0];
-		ss << "Solving message " << Emph(Cyan(msg.message)) << " for " << Yellow(int(msg.reward)) << " gold " << " with difficulty " << Magenta(msg.probability) << endl;
+		ss << "Solving message " << Emph(Cyan(msg.message)) << " for " << Yellow(Int(msg.reward)) << " gold " << " with difficulty " << Magenta(msg.probability) << endl;
 		extract_action_features(features, msg);
 		game.solve_message(msg);
 	} else {
@@ -116,11 +118,11 @@ static void print_scores()
 static ostream& print_game(const mugloar::Game& game, ostream& ss)
 {
 	ss << Strong("Game=") << Emph(Cyan(game.id()))
-		<< Strong(", Turn=") << Emph(int(game.turn()))
-		<< Strong(", Score=") << Green(Strong(Emph(int(game.score()))))
-		<< Strong(", Level=") << Red(Strong(Emph(int(game.level()))))
-		<< Strong(", Lives=") << Magenta(Strong(Emph(int(game.lives()))))
-		<< Strong(", Gold=") << Yellow(Strong(Emph(int(game.gold()))));
+		<< Strong(", Turn=") << Emph(Int(game.turn()))
+		<< Strong(", Score=") << Green(Strong(Emph(Int(game.score()))))
+		<< Strong(", Level=") << Red(Strong(Emph(Int(game.level()))))
+		<< Strong(", Lives=") << Magenta(Strong(Emph(Int(game.lives()))))
+		<< Strong(", Gold=") << Yellow(Strong(Emph(Int(game.gold()))));
 	return ss;
 }
 
@@ -189,7 +191,7 @@ static void worker_task()
 		/* Log game result */
 		{
 			stringstream ss;
-			ss << "id=" << game.id() << "\tscore=" << game.score() << "\tturns=" << game.turn() << "\tlevel=" << game.level() << "\tlives=" << game.lives() << "\t" << endl << flush;
+			ss << "id=" << game.id() << "\tscore=" << Int(game.score()) << "\tturns=" << Int(game.turn()) << "\tlevel=" << Int(game.level()) << "\tlives=" << Int(game.lives()) << "\t" << endl << flush;
 			auto str = ss.str();
 
 			scoped_lock lock(io_mutex);
