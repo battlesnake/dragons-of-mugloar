@@ -106,12 +106,16 @@ Where `p_enum` is the undocumented `probability` field in the message, and `bias
 
 So we have bias towards success early on due to the `bias` term which I estimate to be around 20ish, but once `level + bias` lags behind `turn` then things start to get increasingly harder.
 As a consequence, when `level` exceeds `turn`, things start to get increasingly easier, to the point that we basically can't die (aside from very rare statistical noise).
-When we're reliably earning 6k+ gold per mission, the rate of score-increase really drops off, as it takes us 20+ turns to spend all the gold before our next mission.  Given that the 300-gold items give +2 level, this just increases the `level/turn` ratio further, making us even more immortal.
+
+> When we're reliably earning 6k+ gold per mission, the rate of score-increase really drops off, as it takes us 20+ turns to spend all the gold before our next mission.
+> Given that the 300-gold items give +2 level, this just increases the `level/turn` ratio further, making us even more immortal.
+
+That previous paragraph is no longer true, in #eebd44f we capped the level:turn ratio in order to increase the score growth rate in the late-game.
 
 I think I broke the game.
 
 
-A simple self-learning regression model could be used to fine-tune some of the hard-coded constant numbers (e.g. thresholds) in the assitance subroutines, but why bother when we're already scoring over 100k, utterly destroying the previous high-score by nearly an order of magnitude?
+A simple self-learning regression model could be used to fine-tune some of the hard-coded constant numbers (e.g. thresholds) in the assitance subroutines, but why bother when we're already scoring over 50million, utterly destroying the previous high-score by over three orders of magnitude?
 
 
 # Costed feature-set approach

@@ -58,6 +58,9 @@ static vector<string> current_scores;
 /* API binding */
 static const mugloar::Api api;
 
+static ofstream scoreboard_file;
+static ostream *scoreboard_display;
+
 static void play_move(mugloar::Game& game, ostream& ss)
 {
 	unordered_map<string, float> features;
@@ -92,9 +95,10 @@ static void play_move(mugloar::Game& game, ostream& ss)
 	log_event(events, game, features);
 }
 
-static void print_scores(ostream& ss)
+static void print_scores()
 {
-	scoped_lock lock(score_mutex);
+	scoped_lock lock(io_mutex, score_mutex);
+	ostream& ss = *scoreboard_display;
 	ss << endl;
 	for (size_t i = 0; i < current_scores.size(); i++) {
 		ss << Strong("Worker #") << i << Strong(": ") << current_scores[i] << endl;
@@ -151,7 +155,7 @@ static void play_game(mugloar::Game& game)
 
 		/* Check for status request */
 		if (!status_request.test_and_set()) {
-			print_scores(ss);
+			print_scores();
 		}
 
 		/* Print move summary */
@@ -197,6 +201,10 @@ static void help()
 	cerr << "  -o output-filename" << endl;
 	cerr << "  -s score-filename" << endl;
 	cerr << "  -p worker-count" << endl;
+	cerr << "  -S scoreboard-filename" << endl;
+	cerr << endl;
+	cerr << "Send SIGHUP or SIGQUIT (^\\) to print the scoreboard" << endl;
+	cerr << endl;
 }
 
 int main(int argc, char *argv[])
@@ -205,14 +213,16 @@ int main(int argc, char *argv[])
 
 	const char *outfilename = nullptr;
 	const char *scorefilename = nullptr;
+	const char *scoreboardfilename = nullptr;
 	int worker_count = 20;
 
 	char c;
-	while ((c = getopt(argc, argv, "ho:s:p:")) != -1) {
+	while ((c = getopt(argc, argv, "ho:s:p:S:")) != -1) {
 		switch (c) {
 		case 'h': help(); return 1;
 		case 'o': outfilename = optarg; break;
 		case 's': scorefilename = optarg; break;
+		case 'S': scoreboardfilename = optarg; break;
 		case 'p': worker_count = std::stoi(optarg); break;
 		case '?': help(); return 1;
 		}
@@ -228,6 +238,14 @@ int main(int argc, char *argv[])
 	events = ofstream(outfilename, std::ios::binary | std::ios_base::app);
 	scores = ofstream(scorefilename, std::ios::binary | std::ios_base::app);
 
+	/* Scoreboard file: default to STDERR if no file specified */
+	if (scoreboardfilename) {
+		scoreboard_file = ofstream(scoreboardfilename, std::ios::binary | std::ios_base::app);
+		scoreboard_display = &scoreboard_file;
+	} else {
+		scoreboard_display = &cerr;
+	}
+
 	/* Initialise score table */
 	current_scores.resize(worker_count);
 	std::fill(current_scores.begin(), current_scores.end(), "(starting)");
@@ -236,6 +254,6 @@ int main(int argc, char *argv[])
 	run_parallel(worker_count, worker_task);
 
 	/* Print scores */
-	print_scores(cerr);
+	print_scores();
 
 }
