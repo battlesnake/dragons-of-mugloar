@@ -23,6 +23,18 @@ static constexpr auto HPOT_COST = 50;
 /* Estimated cost of wasting a turn (multiplied by turn number) */
 static constexpr auto TURN_COST = 0.5f;
 
+/*
+ * Cap on level:turn threshold
+ *
+ * Reducing this below 2 allows us to spend a higher % of turns on growing score
+ * instead of on spending gold.
+ * Too close to 1 though, and we spend too many turns buying healing potions.
+ *
+ * A value of 1.2 results in us spending 20% of turns buying healing potions in
+ * the late-game
+ */
+static constexpr auto LEVEL_TURN_CAP = 1.4;
+
 /* How much can we afford to spend? (leaving reserve for HPOTs) */
 static Number can_spend(const Game& game)
 {
@@ -180,7 +192,7 @@ static auto item_ranker(const Game& game, const Item& item)
 	 * for 5 health potions, so we're pretty tough against statistical
 	 * anomalies too (regarding mission failures).
 	 */
-	case ADVANCED: can_buy = game.level() < game.turn() * 1.2; break;
+	case ADVANCED: can_buy = game.level() < game.turn() * LEVEL_TURN_CAP; break;
 	/*
 	 * Unknown mysterious items that we haven't come across yet?
 	 */

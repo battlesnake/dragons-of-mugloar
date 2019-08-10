@@ -112,6 +112,12 @@ As a consequence, when `level` exceeds `turn`, things start to get increasingly 
 
 That previous paragraph is no longer true, in #eebd44f we capped the level:turn ratio in order to increase the score growth rate in the late-game.
 
+Additionally, we measured the turn-execution rate while varying the number of parallel workers, and found that parallelism really doesn't help much.
+It seems that the backend is either very slow or is synchronous+serial; we only manage around 120 turns per second even when running from the same datacenter as the server.
+Since the AI can now reliably hit the "immortal phase", we reduced the worker count from 200 to 4.
+This, combined with the level:turn ratio cap, results in an insane score growth rate now.
+We can reach a score of two-million points within five minutes.
+
 I think I broke the game.
 
 
