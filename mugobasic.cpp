@@ -52,24 +52,11 @@ static ofstream scores;
 static ofstream events;
 
 static mutex score_mutex;
-static pair<string, long> best_score { "(none)", 0 };
-static vector<pair<string, long>> current_scores;
+static pair<long, string> best_score { 0, "(none)" };
+static vector<string> current_scores;
 
 /* API binding */
 static const mugloar::Api api;
-
-static void print_scores(ostream& ss)
-{
-	scoped_lock lock(score_mutex);
-	ss << endl;
-	ss << Strong("Best score so far: ") << Cyan(best_score.second) << " " << Emph(Green(best_score.first)) << endl;
-	ss << endl;
-	for (size_t i = 0; i < current_scores.size(); i++) {
-		const auto& [game, score] = current_scores[i];
-		ss << Strong("Worker #") << i << Strong(": ") << Emph(Magenta(score)) << " " << Emph(Green(game)) << endl;
-	}
-	ss << endl;
-}
 
 static void play_move(mugloar::Game& game, ostream& ss)
 {
@@ -105,6 +92,29 @@ static void play_move(mugloar::Game& game, ostream& ss)
 	log_event(events, game, features);
 }
 
+static void print_scores(ostream& ss)
+{
+	scoped_lock lock(score_mutex);
+	ss << endl;
+	for (size_t i = 0; i < current_scores.size(); i++) {
+		ss << Strong("Worker #") << i << Strong(": ") << current_scores[i] << endl;
+	}
+	ss << endl;
+	ss << Strong("Best: ") << best_score.second << endl;
+	ss << endl;
+}
+
+static ostream& print_game(const mugloar::Game& game, ostream& ss)
+{
+	ss << Strong("Game=") << Emph(Cyan(game.id()))
+		<< Strong(", Turn=") << Emph(int(game.turn()))
+		<< Strong(", Score=") << Green(Strong(Emph(int(game.score()))))
+		<< Strong(", Level=") << Red(Strong(Emph(int(game.level()))))
+		<< Strong(", Lives=") << Magenta(Strong(Emph(int(game.lives()))))
+		<< Strong(", Gold=") << Yellow(Strong(Emph(int(game.gold()))));
+	return ss;
+}
+
 static void play_game(mugloar::Game& game)
 {
 	/*
@@ -113,34 +123,29 @@ static void play_game(mugloar::Game& game)
 	 */
 	game.autoupdate_reputation = false;
 
-	{
-		scoped_lock lock(score_mutex);
-		current_scores[worker_id] = { game.id(), game.score() };
-	}
-
 	/* Keep playing until we die */
 	while (!stopping && !game.dead()) {
 
 		/* Log game status */
 		stringstream ss;
-		ss << Strong("Game=") << Emph(Cyan(game.id()))
-			<< Strong(", Turn=") << Emph(int(game.turn()))
-			<< Strong(", Score=") << Green(Strong(Emph(int(game.score()))))
-			<< Strong(", Level=") << Red(Strong(Emph(int(game.level()))))
-			<< Strong(", Lives=") << Magenta(Strong(Emph(int(game.lives()))))
-			<< Strong(", Gold=") << Yellow(Strong(Emph(int(game.gold()))))
-			<< endl;
+		print_game(game, ss) << endl;
 
 		/* Play a move */
 		play_move(game, ss);
 
 		/* Update scoreboard */
+		string stats;
+		{
+			stringstream ss;
+			print_game(game, ss) << flush;
+			stats = ss.str();
+		}
 		{
 			scoped_lock lock(score_mutex);
-			long score = game.score();
-			current_scores[worker_id] = { game.id(), score };
-			if (score > best_score.second) {
-				best_score = { game.id(), score };
+			auto score = game.score();
+			current_scores[worker_id] = stats;
+			if (score > best_score.first) {
+				best_score = { score, std::move(stats) };
 			}
 		}
 
@@ -225,7 +230,7 @@ int main(int argc, char *argv[])
 
 	/* Initialise score table */
 	current_scores.resize(worker_count);
-	std::fill(current_scores.begin(), current_scores.end(), best_score);
+	std::fill(current_scores.begin(), current_scores.end(), "(starting)");
 
 	/* Create workers */
 	run_parallel(worker_count, worker_task);

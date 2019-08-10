@@ -51,9 +51,14 @@ void run_parallel(int worker_count, function<void()> task)
 
 	cerr << "Installing signal handlers..." << endl;
 
+	/* Hang-up (e.g. killall -s HUP <prog-name>) */
 	std::signal(SIGHUP, on_info);
+	/* Ctrl+\ */
+	std::signal(SIGQUIT, on_info);
 
+	/* Ctrl+C */
 	std::signal(SIGINT, on_exit);
+	/* Terminate */
 	std::signal(SIGTERM, on_exit);
 
 	cerr << "Starting " << worker_count << " workers..." << endl;
