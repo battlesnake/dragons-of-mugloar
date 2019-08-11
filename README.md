@@ -118,6 +118,9 @@ Since the AI can now reliably hit the "immortal phase", we reduced the worker co
 This, combined with the level:turn ratio cap, results in an insane score growth rate now.
 We can reach a score of two-million points within five minutes.
 
+We need to vary the level:turn cap, then plot the score growth rate (e.g. turns required for score to go from 10M to 100M), so we can work out the value for optimal growth.
+I'll leave that for another time or for someone else though, as I've already exceeded a score of sixty-billion now, with a crudely chosen ratio cap of 1.4.
+
 I think I broke the game.
 
 
