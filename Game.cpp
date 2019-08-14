@@ -13,6 +13,7 @@ using std::string;
 using std::vector;
 using std::pair;
 using std::numeric_limits;
+using std::optional;
 
 namespace mugloar {
 
@@ -32,7 +33,7 @@ static vector<pair<string, float>> prob_map {
 };
 
 /* String to enum */
-Probability lookup_probability(std::string name)
+Probability lookup_probability(string name)
 {
 	name = lowercase(name);
 	int p = 0;
@@ -46,7 +47,7 @@ Probability lookup_probability(std::string name)
 }
 
 /* Enum to string */
-const std::string& reverse_lookup_probability(Probability p)
+const string& reverse_lookup_probability(Probability p)
 {
 	if (p < 0 || p >= prob_map.size()) {
 		throw std::runtime_error("Invalid probability value");
@@ -73,11 +74,17 @@ float probability_risk(Probability p)
 	return (r - m) / (M - m);
 }
 
-Game::Game(const Api& api) :
+Game::Game(const Api& api, const optional<GameId>& id) :
 	api(api)
 {
-	api.game_start(_id, _lives, _gold, _level, _score, _high_score, _turn);
+	if (id) {
+		_id = *id;
+	} else {
+		api.game_start(_id, _lives, _gold, _level, _score, _high_score, _turn);
+	}
+	autoupdate_reputation = false;
 	turn_started();
+	autoupdate_reputation = true;
 }
 
 void Game::turn_started()

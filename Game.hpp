@@ -9,6 +9,7 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <optional>
 
 namespace mugloar {
 
@@ -137,7 +138,15 @@ class Game
 	void update_items();
 	void internal_update_reputation();
 public:
-	Game(const Api& api);
+	/*
+	 * 1. Start new game (no id specified)
+	 *
+	 * 2. Resume existing game (use specified id)
+	 *
+	 * Advice: try to buy a hpot immediately after resume, so we get the
+	 * game info e.g. lives, gold, level, turn
+	 */
+	Game(const Api& api, const std::optional<GameId>& id = std::nullopt);
 
 	/* Getters */
 

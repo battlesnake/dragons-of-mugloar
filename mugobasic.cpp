@@ -6,6 +6,7 @@
  */
 #include <atomic>
 #include <mutex>
+#include <deque>
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -13,6 +14,8 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <optional>
+#include <queue>
 
 #include <getopt.h>
 
@@ -42,6 +45,8 @@ using std::flush;
 using std::atomic;
 using std::mutex;
 using std::scoped_lock;
+using std::queue;
+using std::optional;
 using namespace mugloar;
 
 using Int = long long;
@@ -57,6 +62,9 @@ static mutex score_mutex;
 static pair<Int, string> best_score { 0, "(none)" };
 static vector<string> current_scores;
 static atomic<Int> total_turns { 0 };
+
+static mutex hijack_mutex;
+queue<const char *> hijack;
 
 /* API binding */
 static const mugloar::Api api;
@@ -180,8 +188,30 @@ static void worker_task()
 	/* Keep playing games until stop is requested by user */
 	do {
 
-		/* Play game */
-		mugloar::Game game(api);
+		/* Hijack existing game or create new game */
+		optional<GameId> id;
+		{
+			scoped_lock lock(hijack_mutex);
+			if (!hijack.empty()) {
+				id = GameId(hijack.front());
+				hijack.pop();
+				scoped_lock lock(io_mutex);
+				cerr << "Worker #" << worker_id << ": Hijacking game " << *id << endl;
+			}
+		}
+
+		mugloar::Game game(api, id);
+
+		/* If we hijacked a game, buy a hpot so the stats update */
+		if (id) {
+			for (const auto& item : game.shop_items()) {
+				if (item.id == "hpot") {
+					game.purchase_item(item);
+					break;
+				}
+			}
+		}
+
 		try {
 			play_game(game);
 		} catch (const std::runtime_error& e) {
@@ -209,6 +239,7 @@ static void help()
 	cerr << "  -s score-filename" << endl;
 	cerr << "  -p worker-count" << endl;
 	cerr << "  -S scoreboard-filename" << endl;
+	cerr << "  [-g game-id]..." << endl;
 	cerr << endl;
 	cerr << "Send SIGHUP or SIGQUIT (^\\) to print the scoreboard" << endl;
 	cerr << endl;
@@ -224,13 +255,14 @@ int main(int argc, char *argv[])
 	int worker_count = 20;
 
 	char c;
-	while ((c = getopt(argc, argv, "ho:s:p:S:")) != -1) {
+	while ((c = getopt(argc, argv, "ho:s:p:S:g:")) != -1) {
 		switch (c) {
 		case 'h': help(); return 1;
 		case 'o': outfilename = optarg; break;
 		case 's': scorefilename = optarg; break;
 		case 'S': scoreboardfilename = optarg; break;
 		case 'p': worker_count = std::stoi(optarg); break;
+		case 'g': hijack.push(optarg); break;
 		case '?': help(); return 1;
 		}
 	}
