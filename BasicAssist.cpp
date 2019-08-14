@@ -36,7 +36,7 @@ static constexpr auto TURN_COST = 0.5f;
  * A value of 1.4 results in us spending less than 1% of turns buying healing
  * potions in the late-game.
  */
-static constexpr auto LEVEL_TURN_CAP = 1.4;
+static constexpr auto LEVEL_TURN_CAP = 1.3;
 
 /* How much can we afford to spend? (leaving reserve for HPOTs) */
 static Number can_spend(const Game& game)
