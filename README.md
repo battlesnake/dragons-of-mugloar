@@ -119,10 +119,11 @@ This, combined with the level:turn ratio cap, results in an insane score growth 
 We can reach a score of two-million points within five minutes.
 
 We need to vary the level:turn cap, then plot the score growth rate (e.g. turns required for score to go from 10M to 100M), so we can work out the value for optimal growth.
-I'll leave that for another time or for someone else though, as I've already exceeded a score of sixty-billion now, with a crudely chosen ratio cap of 1.4.
+I'll leave that for another time or for someone else though, as I've already exceeded a score of 233 trillion now, with a crudely chosen ratio cap of 1.4.
 
 I think I broke the game.
 
+This basic AI achieved a score of over 233 trillion points, and was only stopped due to the server being restarted.
 
 A simple self-learning regression model could be used to fine-tune some of the hard-coded constant numbers (e.g. thresholds) in the assitance subroutines, but why bother when we're already scoring over 50million, utterly destroying the previous high-score by over three orders of magnitude?
 
