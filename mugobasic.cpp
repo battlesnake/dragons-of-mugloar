@@ -204,9 +204,21 @@ static void worker_task()
 
 		/* If we hijacked a game, buy a hpot so the stats update */
 		if (id) {
+			{
+				scoped_lock lock(io_mutex);
+				cerr << "Attempting to buy hpot to update state of hijacked game " << *id << endl;
+			}
 			for (const auto& item : game.shop_items()) {
 				if (item.id == "hpot") {
-					game.purchase_item(item);
+					bool success = game.purchase_item(item);
+					{
+						scoped_lock lock(io_mutex);
+						if (success) {
+							cerr << "Bought hpot to update state of hijacked game " << *id << endl;
+						} else {
+							cerr << Red("Failed to buy hpot to update state of hijacked game ") << *id << endl;
+						}
+					}
 					break;
 				}
 			}

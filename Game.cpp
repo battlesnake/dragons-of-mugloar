@@ -79,6 +79,7 @@ Game::Game(const Api& api, const optional<GameId>& id) :
 {
 	if (id) {
 		_id = *id;
+		_lives = 1;
 	} else {
 		api.game_start(_id, _lives, _gold, _level, _score, _high_score, _turn);
 	}
